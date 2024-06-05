@@ -1,4 +1,4 @@
-import { Address, bool, bs, compile, data, int, lam, makeValidator, papp, PaymentCredentials, pBool, pfn, phoist, pif, pintToBS, plet, pmatch, precursive, PScriptContext, pStr, ptrace, ptraceIfFalse, punsafeConvertType, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, bool, compile, data, makeValidator, PaymentCredentials, pBool, pfn, pmatch, PScriptContext, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
@@ -6,16 +6,15 @@ export const contract = pfn([
     data,
     PScriptContext.type
 ],  bool)
-(( datum, _redeemer, ctx ) => {
-
-    // inlined
-    const signedByBeneficiary = ctx.tx.signatories.some( datum.beneficiary.eqTerm );
+(( datum, redeemer, ctx ) => {
+     // inlined
+    const signedByBeneficiary = ctx.tx.signatories.some( datum.beneficiary.eq )
 
     // inlined
     const deadlineReached = 
         pmatch( ctx.tx.interval.from.bound )
         .onPFinite(({ _0: lowerInterval }) =>
-                datum.deadline.ltEq( lowerInterval ) 
+            datum.deadline.ltEq( lowerInterval ) 
         )
         ._( _ => pBool( false ) )
 

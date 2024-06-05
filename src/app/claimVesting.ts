@@ -1,8 +1,12 @@
-import { Address, DataI, PaymentCredentials } from "@harmoniclabs/plu-ts";
+import { Address, DataI, Hash28, PaymentCredentials, PubKeyHash } from "@harmoniclabs/plu-ts";
 import { cli } from "./utils/cli";
+import getTxBuilder from "./getTxBuilder";
+import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+import blockfrost from "./blockfrost";
 
-async function claimVesting()
+async function claimVesting(Blockfrost: BlockfrostPluts)
 {
+    const txBuilder = await getTxBuilder(Blockfrost);
     const script = cli.utils.readScript("./testnet/vesting.plutus.json");
 
     const scriptAddr = new Address(
@@ -10,11 +14,12 @@ async function claimVesting()
         PaymentCredentials.script( script.hash )
     );
     
-    const privateKey = cli.utils.readPrivateKey("./testnet/payment2.skey");
+    const payment2skey = "./testnet/payment2.skey";
+    const privateKey = cli.utils.readPrivateKey(payment2skey);
     const addr = cli.utils.readAddress("./testnet/address2.addr");
 
-    const utxos = await cli.query.utxo({ address: addr });
-    const scriptUtxos = await cli.query.utxo({ address: scriptAddr });
+    const utxos = await Blockfrost.addressUtxos( addr );
+    const scriptUtxos = await Blockfrost.addressUtxos( scriptAddr );
 
     if( utxos.length === 0 || scriptUtxos.length === 0 )
     {
@@ -24,10 +29,11 @@ async function claimVesting()
     }
 
     const utxo = utxos[0];
-
     const pkh = privateKey.derivePublicKey().hash;
 
-    let tx = await cli.transaction.build({
+    console.log('privateKey :', privateKey)
+    console.log('pkh: ', pkh)
+    let tx = await txBuilder.buildSync({
         inputs: [
             { utxo: utxo },
             {
@@ -41,16 +47,17 @@ async function claimVesting()
         ],
         requiredSigners: [ pkh ], // required to be included in script context
         collaterals: [ utxo ],
-        changeAddress: addr,
-        invalidBefore: cli.query.tipSync().slot
+        changeAddress: addr
     });
 
     tx = await cli.transaction.sign({ tx, privateKey });
 
-    await cli.transaction.submit({ tx: tx });
+    const submittedTx = await Blockfrost.submitTx( tx );
+    console.log(submittedTx);
+    
 }
 
 if( process.argv[1].includes("claimVesting") )
 {
-    claimVesting();
+    claimVesting(blockfrost());
 }

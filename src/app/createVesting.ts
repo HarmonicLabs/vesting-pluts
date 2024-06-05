@@ -1,9 +1,14 @@
-import { Address, PaymentCredentials, TxBuilder, Value, pBSToData, pByteString, pIntToData } from "@harmoniclabs/plu-ts";
+import { Address, PaymentCredentials, Value, pBSToData, pByteString, pIntToData } from "@harmoniclabs/plu-ts";
 import { cli } from "./utils/cli";
 import VestingDatum from "../VestingDatum";
+import getTxBuilder from "./getTxBuilder";
+import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+import blockfrost from "./blockfrost";
 
-async function createVesting()
-{
+async function createVesting(Blockfrost: BlockfrostPluts)
+{   
+    const txBuilder = await getTxBuilder(Blockfrost);
+     
     const script = cli.utils.readScript("./testnet/vesting.plutus.json");
 
     const scriptAddr = new Address(
@@ -15,7 +20,7 @@ async function createVesting()
     const addr = cli.utils.readAddress("./testnet/address1.addr");
     const beneficiary = cli.utils.readPublicKey("./testnet/payment2.vkey");
 
-    const utxos = await cli.query.utxo({ address: addr });
+    const utxos = await Blockfrost.addressUtxos( addr );
 
     if( utxos.length === 0 )
     {
@@ -28,7 +33,7 @@ async function createVesting()
 
     const nowPosix = Date.now();
 
-    let tx = await cli.transaction.build({
+    let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [ utxo ],
         outputs: [
@@ -43,13 +48,15 @@ async function createVesting()
         ],
         changeAddress: addr
     });
-
+    
     tx = await cli.transaction.sign({ tx, privateKey });
 
-    await cli.transaction.submit({ tx: tx });
+    const submittedTx = await Blockfrost.submitTx( tx );
+    console.log(submittedTx);
+    
 }
 
 if( process.argv[1].includes("createVesting") )
 {
-    createVesting();
+    createVesting(blockfrost());
 }

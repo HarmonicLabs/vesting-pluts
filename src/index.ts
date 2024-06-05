@@ -1,7 +1,7 @@
 import { existsSync } from "fs";
+import { mkdir } from "fs/promises";
 import { cli } from "./app/utils/cli";
 import { script } from "./contract";
-import { mkdir } from "fs/promises";
 
 console.log("validator compiled succesfully! 🎉\n");
 console.log(
