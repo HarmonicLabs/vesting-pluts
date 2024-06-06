@@ -1,4 +1,4 @@
-import { Address, bool, compile, data, makeValidator, PaymentCredentials, pBool, pfn, pmatch, PScriptContext, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, bool, compile, data, makeValidator, PaymentCredentials, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
@@ -18,7 +18,7 @@ export const contract = pfn([
         )
         ._( _ => pBool( false ) )
 
-    return signedByBeneficiary.and( deadlineReached );
+    return signedByBeneficiary.and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
 });
 
 ///////////////////////////////////////////////////////////////////
