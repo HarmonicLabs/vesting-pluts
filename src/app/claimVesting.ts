@@ -1,4 +1,4 @@
-import { Address, DataI, Hash28, PaymentCredentials, PubKeyHash } from "@harmoniclabs/plu-ts";
+import { Address, DataI, PaymentCredentials, PubKeyHash } from "@harmoniclabs/plu-ts";
 import { cli } from "./utils/cli";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
@@ -29,10 +29,10 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
     }
 
     const utxo = utxos[0];
-    const pkh = privateKey.derivePublicKey().hash;
+    const pkh = new PubKeyHash(privateKey.derivePublicKey().hash);
 
-    console.log('privateKey :', privateKey)
-    console.log('pkh: ', pkh)
+    txBuilder.setGenesisInfos( await Blockfrost.getGenesisInfos() )
+
     let tx = await txBuilder.buildSync({
         inputs: [
             { utxo: utxo },
@@ -47,7 +47,8 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
         ],
         requiredSigners: [ pkh ], // required to be included in script context
         collaterals: [ utxo ],
-        changeAddress: addr
+        changeAddress: addr,
+        invalidBefore: (await Blockfrost.getChainTip()).slot!
     });
 
     tx = await cli.transaction.sign({ tx, privateKey });
