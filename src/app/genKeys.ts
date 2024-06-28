@@ -1,12 +1,13 @@
 import { existsSync } from "fs";
 // import { cli } from "./utils/cli";
-import { Address, Credential, PublicKey } from "@harmoniclabs/plu-ts";
+import { Address, Credential, PublicKey, PrivateKey, PubKeyHash } from "@harmoniclabs/plu-ts";
 import { config } from "dotenv";
 import { mkdir, writeFile } from "fs/promises";
 
 import pkg from 'blakejs';
+import { json } from "stream/consumers";
 
-const {blake2bHex } = pkg;
+const {blake2bHex, blake2b } = pkg;
 config();
 
 async function genKeys()
@@ -33,40 +34,41 @@ async function genKeys()
               true,
               ["sign", "verify"]
           );
-            const publicKeyArrayBuffer = await globalThis.crypto.subtle.exportKey('raw', keyPair.publicKey);
-            const publicKeyUint8Array = new Uint8Array(publicKeyArrayBuffer);
+          
+        const publicKeyArrayBuffer = await globalThis.crypto.subtle.exportKey('raw', keyPair.publicKey);
+        const publicKeyUint8Array = new Uint8Array(publicKeyArrayBuffer);
+        const publicKey = new PublicKey(publicKeyUint8Array);
+        const publicKeyHash = new PubKeyHash(blake2b(publicKeyUint8Array, undefined, 28));
 
-            const publicKeyBuffer = Buffer.from(publicKeyUint8Array);
-            const publicKeyHash = blake2bHex(publicKeyUint8Array, undefined, 28);
+        const pubKeyJsonObj = {
+            type: "PaymentVerificationKeyShelley_ed25519",
+            description: "Payment Verification Key",
+            cborHex: publicKey.toCbor().toString()
+        }
 
-            // Use the hash to create a Credential
-            const pubKeyCredential = Credential.keyHash(publicKeyHash);
+        const pubKeyJsonStr = JSON.stringify(pubKeyJsonObj, null, 4);
+        await writeFile(`./testnet/payment_tests${i}.vkey`, pubKeyJsonStr);
 
-            const pubKeyObj = new PublicKey(publicKeyUint8Array)
-            // Create the address
-            // const address = new Address("testnet", pubKeyCredential);
-            const address = Address.testnet(pubKeyCredential);
+        const privateKeyArrayBuffer = await globalThis.crypto.subtle.exportKey('raw', keyPair.privateKey);
+        const privateKeyUint8Array = new Uint8Array(privateKeyArrayBuffer);
+        const privateKey = new PrivateKey(privateKeyUint8Array);
 
-        // const address = new Address(
-        //     "testnet",
-        //     Credential.keyHash( keyPair.publicKey )
-        // );
+        const pvtKeyJsonObj = {
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: privateKey.toCbor().toString()
+        }
 
-          await writeFile(`./testnet/address${i}.addr`, address.toString());
-          await writeFile(`./testnet/payment${i}.vkey`, publicKeyHash.toString());
-          await writeFile(`./testnet/payment${i}.skey`, keyPair.privateKey.toString());
+        const pvtKeyJsonStr = JSON.stringify(pvtKeyJsonObj, null, 4);
+        await writeFile(`./testnet/payment_tests${i}.skey`, pvtKeyJsonStr);
 
-        // console.log(publicKeyArrayBuffer, publicKeyUint8Array);
+        console.log(publicKey.toCbor().toString()); 
         
-
-        // console.log(pubKeyObj.toString())
-        console.log(pubKeyObj.toCbor().toString())
+        // Create the address
+        const credential = Credential.keyHash(publicKeyHash);
+        const address = new Address("testnet", credential);
+        console.log(address.toString());
         
-        // promises.push(
-        //     cli.utils.writeAddress( addr, `./testnet/address${i}.addr` ),
-        //     cli.utils.writePublicKey( publicKey, `./testnet/payment${i}.vkey` ),
-        //     cli.utils.writePrivateKey( privateKey, `./testnet/payment${i}.skey` )
-        // );
     }
 
     // wait for all files to be copied
