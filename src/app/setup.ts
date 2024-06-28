@@ -1,6 +1,4 @@
 import { existsSync } from "fs";
-import { cli } from "./utils/cli";
-import { Address, PaymentCredentials } from "@harmoniclabs/plu-ts";
 import { config } from "dotenv";
 import { copyFile, mkdir } from "fs/promises";
 

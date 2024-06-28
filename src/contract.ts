@@ -1,4 +1,4 @@
-import { Address, bool, compile, data, makeValidator, PaymentCredentials, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, bool, compile, data, makeValidator, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
@@ -38,12 +38,12 @@ export const script = new Script(
 
 export const scriptMainnetAddr = new Address(
     "mainnet",
-    PaymentCredentials.script( script.hash )
+    Credential.script( script.hash )
 );
 
 export const scriptTestnetAddr = new Address(
     "testnet",
-    PaymentCredentials.script( script.hash )
+    Credential.script( script.hash )
 );
 
 export default contract;
