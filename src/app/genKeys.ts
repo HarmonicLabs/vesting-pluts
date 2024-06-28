@@ -71,8 +71,8 @@ async function genKeys()
             cborHex: privateKey.toCbor().toString()
         }
 
-        const pvtKeyJsonStr = JSON.stringify(pubKeyJsonObj, null, 4);
-        await writeFile(`./testnet/payment_tests${i}.vkey`, pvtKeyJsonStr);
+        const pvtKeyJsonStr = JSON.stringify(pvtKeyJsonObj, null, 4);
+        await writeFile(`./testnet/payment_tests${i}.skey`, pvtKeyJsonStr);
 
 
         // Create the address
