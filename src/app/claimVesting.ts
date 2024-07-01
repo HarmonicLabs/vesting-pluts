@@ -1,21 +1,25 @@
-import { Address, DataI, Credential, PubKeyHash } from "@harmoniclabs/plu-ts";
+import { Address, DataI, Credential, PubKeyHash, PrivateKey, CredentialType, Hash28 } from "@harmoniclabs/plu-ts";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
+import { hexToUint8Array } from "./utils";
+import pkg from 'blakejs';
+const { blake2b } = pkg;
 
 async function claimVesting(Blockfrost: BlockfrostPluts)
 {
     const txBuilder = await getTxBuilder(Blockfrost);
-    const script = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
 
+    const script = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
+    const hashScript = new Hash28(blake2b(hexToUint8Array(JSON.parse(script).cborHex), undefined, 28), undefined);
     const scriptAddr = new Address(
         "testnet",
-        Credential.script( JSON.parse(script).hash )
+        new Credential(CredentialType.Script, hashScript)
     );
-    
-    const privateKey = await readFile("./testnet/payment2.skey", { encoding: "utf-8" });
-    const privateKeyJSON = JSON.parse(privateKey).cborHex();
+
+    const privateKeyFile = await readFile("./testnet/payment2.skey", { encoding: "utf-8" });
+    const privateKey = PrivateKey.fromCbor( JSON.parse(privateKeyFile).cborHex );
     const addr = await readFile("./testnet/address2.addr", { encoding: "utf-8" });
     const address = Address.fromString(addr);
 
@@ -30,7 +34,7 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
     }
 
     const utxo = utxos[0];
-    const pkh = new PubKeyHash(privateKeyJSON.derivePublicKey().hash);
+    const pkh = new PubKeyHash(privateKey.derivePublicKey().hash);
 
     txBuilder.setGenesisInfos( await Blockfrost.getGenesisInfos() )
 
@@ -52,7 +56,7 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
         invalidBefore: (await Blockfrost.getChainTip()).slot!
     });
 
-    await tx.signWith( privateKeyJSON )
+    await tx.signWith( privateKey )
 
     const submittedTx = await Blockfrost.submitTx( tx );
     console.log(submittedTx);
