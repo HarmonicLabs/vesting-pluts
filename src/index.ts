@@ -1,6 +1,5 @@
 import { existsSync } from "fs";
 import { mkdir, writeFile } from "fs/promises";
-// import { cli } from "./app/utils/cli";
 import { script } from "./contract";
 
 console.log("validator compiled succesfully! 🎉\n");
