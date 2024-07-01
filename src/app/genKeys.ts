@@ -1,18 +1,16 @@
 import { existsSync } from "fs";
-// import { cli } from "./utils/cli";
 import { Address, Credential, PublicKey, PrivateKey, PubKeyHash } from "@harmoniclabs/plu-ts";
 import { config } from "dotenv";
 import { mkdir, writeFile } from "fs/promises";
 
 import pkg from 'blakejs';
-import { json } from "stream/consumers";
+const { blake2b } = pkg;
 
-const {blake2bHex, blake2b } = pkg;
 config();
 
 async function genKeys()
 {
-    const nKeys = 1;
+    const nKeys = 2;
 
     const promises: Promise<any>[] = [];
 
@@ -23,8 +21,6 @@ async function genKeys()
     
     for( let i = 1; i <= nKeys; i++ )
     {
-        // const { privateKey, publicKey } = await cli.address.keyGen();
-        
         // generate keypair
         let keyPair = await globalThis.crypto.subtle.generateKey(
             {
@@ -47,7 +43,7 @@ async function genKeys()
         console.log("\nPublic Key:",publicKey.toCbor().toString());
 
         const pubKeyJsonStr = JSON.stringify(pubKeyJsonObj, null, 4);
-        await writeFile(`./testnet/payment_tests${i}.vkey`, pubKeyJsonStr);
+        await writeFile(`./testnet/payment${i}.vkey`, pubKeyJsonStr);
 
         // Export of the private key in a way that's compatible with the Cardano CLI
         const privateKeyArrayBuffer = await globalThis.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
@@ -72,14 +68,15 @@ async function genKeys()
         }
 
         const pvtKeyJsonStr = JSON.stringify(pvtKeyJsonObj, null, 4);
-        await writeFile(`./testnet/payment_tests${i}.skey`, pvtKeyJsonStr);
+        await writeFile(`./testnet/payment${i}.skey`, pvtKeyJsonStr);
 
 
         // Create the address
         const credential = Credential.keyHash(publicKeyHash);
         const address = new Address("testnet", credential);
         console.log("\nAddress:",address.toString());
-    }
+        await writeFile(`./testnet/address${i}.addr`, address.toString());
+    }   
 
     // wait for all files to be copied
     await Promise.all( promises );
