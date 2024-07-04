@@ -18,7 +18,8 @@ export const contract = pfn([
         )
         ._( _ => pBool( false ) )
 
-    return signedByBeneficiary.and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
+    return (ptraceIfFalse.$(pdelay(pStr("Error in signedByBenificiary"))).$(signedByBeneficiary))
+    .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
 });
 
 ///////////////////////////////////////////////////////////////////
