@@ -1,4 +1,4 @@
-import { Address, bool, bs, compile, data, int, lam, makeValidator, papp, PaymentCredentials, pBool, pfn, phoist, pif, pintToBS, plet, pmatch, precursive, PScriptContext, pStr, ptrace, ptraceIfFalse, punsafeConvertType, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, bool, compile, data, makeValidator, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
@@ -6,20 +6,20 @@ export const contract = pfn([
     data,
     PScriptContext.type
 ],  bool)
-(( datum, _redeemer, ctx ) => {
-
-    // inlined
-    const signedByBeneficiary = ctx.tx.signatories.some( datum.beneficiary.eqTerm );
+(( datum, redeemer, ctx ) => {
+     // inlined
+    const signedByBeneficiary = ctx.tx.signatories.some( datum.beneficiary.eq )
 
     // inlined
     const deadlineReached = 
         pmatch( ctx.tx.interval.from.bound )
         .onPFinite(({ _0: lowerInterval }) =>
-                datum.deadline.ltEq( lowerInterval ) 
+            datum.deadline.ltEq( lowerInterval ) 
         )
         ._( _ => pBool( false ) )
 
-    return signedByBeneficiary.and( deadlineReached );
+    return (ptraceIfFalse.$(pdelay(pStr("Error in signedByBenificiary"))).$(signedByBeneficiary))
+    .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
 });
 
 ///////////////////////////////////////////////////////////////////
@@ -39,12 +39,12 @@ export const script = new Script(
 
 export const scriptMainnetAddr = new Address(
     "mainnet",
-    PaymentCredentials.script( script.hash )
+    Credential.script( script.hash )
 );
 
 export const scriptTestnetAddr = new Address(
     "testnet",
-    PaymentCredentials.script( script.hash )
+    Credential.script( script.hash )
 );
 
 export default contract;

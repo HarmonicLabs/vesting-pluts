@@ -1,7 +1,6 @@
 import { existsSync } from "fs";
-import { cli } from "./app/utils/cli";
+import { mkdir, writeFile } from "fs/promises";
 import { script } from "./contract";
-import { mkdir } from "fs/promises";
 
 console.log("validator compiled succesfully! 🎉\n");
 console.log(
@@ -18,6 +17,6 @@ async function main()
     {
         await mkdir("./testnet");
     }
-    cli.utils.writeScript( script, "./testnet/vesting.plutus.json")
+    await writeFile("./testnet/vesting.plutus.json", JSON.stringify(script.toJson(), undefined, 4))
 }
 main();

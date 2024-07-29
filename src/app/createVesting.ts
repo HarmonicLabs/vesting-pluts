@@ -1,34 +1,42 @@
-import { Address, PaymentCredentials, TxBuilder, Value, pBSToData, pByteString, pIntToData } from "@harmoniclabs/plu-ts";
-import { cli } from "./utils/cli";
+import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script } from "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
+import getTxBuilder from "./getTxBuilder";
+import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+import blockfrost from "./blockfrost";
+import { readFile } from "fs/promises";
 
-async function createVesting()
-{
-    const script = cli.utils.readScript("./testnet/vesting.plutus.json");
-
+async function createVesting(Blockfrost: BlockfrostPluts)
+{   
+    const txBuilder = await getTxBuilder(Blockfrost);
+     
+    const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
+    const script = Script.fromCbor(JSON.parse(scriptFile).cborHex)
     const scriptAddr = new Address(
         "testnet",
-        PaymentCredentials.script( script.hash )
+        new Credential(CredentialType.Script, script.hash)
     );
     
-    const privateKey = cli.utils.readPrivateKey("./testnet/payment1.skey");
-    const addr = cli.utils.readAddress("./testnet/address1.addr");
-    const beneficiary = cli.utils.readPublicKey("./testnet/payment2.vkey");
+    const privateKeyFile = await readFile("./testnet/payment1.skey", { encoding: "utf-8" });
+    const privateKey = PrivateKey.fromCbor( JSON.parse(privateKeyFile).cborHex );
+    
+    const addr = await readFile("./testnet/address1.addr", { encoding: "utf-8" });
+    const address = Address.fromString(addr);
+    
+    const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
+    const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
 
-    const utxos = await cli.query.utxo({ address: addr });
+    const utxos = await Blockfrost.addressUtxos( address )
+        .catch( e => { throw new Error ("unable to find utxos at " + addr) })
 
-    if( utxos.length === 0 )
-    {
-        throw new Error(
-            "no utxos found at address " + addr.toString()
-        );
+    // atleast has 10 ada
+    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 10_000_000)!;
+    if (!utxo) {
+        throw new Error("No utxo with more than 10 ada");
     }
-
-    const utxo = utxos[0];
 
     const nowPosix = Date.now();
 
-    let tx = await cli.transaction.build({
+    let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [ utxo ],
         outputs: [
@@ -36,20 +44,22 @@ async function createVesting()
                 address: scriptAddr,
                 value: Value.lovelaces( 10_000_000 ),
                 datum: VestingDatum.VestingDatum({
-                    beneficiary: pBSToData.$( pByteString( beneficiary.hash.toBuffer() ) ),
+                    beneficiary: pBSToData.$( pByteString( pkh.toBuffer() ) ),
                     deadline: pIntToData.$( nowPosix + 10_000 )
                 })
             }
         ],
-        changeAddress: addr
+        changeAddress: address
     });
+    
+    await tx.signWith( new PrivateKey(privateKey) );
 
-    tx = await cli.transaction.sign({ tx, privateKey });
-
-    await cli.transaction.submit({ tx: tx });
+    const submittedTx = await Blockfrost.submitTx( tx );
+    console.log(submittedTx);
+    
 }
 
 if( process.argv[1].includes("createVesting") )
 {
-    createVesting();
+    createVesting(blockfrost());
 }

@@ -15,8 +15,9 @@
     "vesting:claim": "npm run build:light && node dist/app/claimVesting.js"
   },
   "dependencies": {
-    "@harmoniclabs/cardanocli-pluts": "^0.1.3-dev5",
-    "@harmoniclabs/plu-ts": "^0.3.0-dev3",
+    "@harmoniclabs/blockfrost-pluts": "^0.1.13",
+    "@harmoniclabs/plu-ts": "^0.8.0-dev2",
+    "blakejs": "^1.2.1",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {
