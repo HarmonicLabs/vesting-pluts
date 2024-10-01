@@ -1,4 +1,4 @@
-import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script } from "@harmoniclabs/plu-ts";
+import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
@@ -10,7 +10,7 @@ async function createVesting(Blockfrost: BlockfrostPluts)
     const txBuilder = await getTxBuilder(Blockfrost);
      
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
-    const script = Script.fromCbor(JSON.parse(scriptFile).cborHex)
+    const script = Script.fromCbor(JSON.parse(scriptFile).cborHex, ScriptType.PlutusV3)
     const scriptAddr = new Address(
         "testnet",
         new Credential(CredentialType.Script, script.hash)
@@ -29,7 +29,7 @@ async function createVesting(Blockfrost: BlockfrostPluts)
         .catch( e => { throw new Error ("unable to find utxos at " + addr) })
 
     // atleast has 10 ada
-    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 10_000_000)!;
+    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000)!;
     if (!utxo) {
         throw new Error("No utxo with more than 10 ada");
     }

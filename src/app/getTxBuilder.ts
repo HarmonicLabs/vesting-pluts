@@ -12,7 +12,7 @@ export default async function getTxBuilder(Blockfrost: BlockfrostPluts): Promise
 {
     if(!( _cachedTxBuilder instanceof TxBuilder ))
     {
-        const parameters = await Blockfrost.epochsLatestParameters();
+        const parameters = await Blockfrost.getProtocolParameters();
         _cachedTxBuilder = new TxBuilder(parameters);
     }
 

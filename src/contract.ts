@@ -12,7 +12,7 @@ export const contract = pfn([
     ._(_ => perror(PMaybe(data).type))
   );
 
-     const datum = plet( punsafeConvertType( maybeDatum, VestingDatum.type ) )
+     const datum = plet( punsafeConvertType( maybeDatum.unwrap, VestingDatum.type ) )
 
      const signedByBeneficiary = tx.signatories.some( datum.beneficiary.eq )
 
