@@ -1,25 +1,35 @@
-import { Address, bool, compile, data, makeValidator, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, bool, compile, data, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType, plet, passert, perror, PMaybe, unit, punsafeConvertType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
-    VestingDatum.type,
-    data,
     PScriptContext.type
-],  bool)
-(( datum, redeemer, ctx ) => {
-     // inlined
-    const signedByBeneficiary = ctx.tx.signatories.some( datum.beneficiary.eq )
+],  unit)
+(( {redeemer, tx, purpose} ) => {
+
+  const maybeDatum = plet(
+    pmatch(purpose)
+    .onSpending(({ datum }) => datum)
+    ._(_ => perror(PMaybe(data).type))
+  );
+
+     const datum = plet( punsafeConvertType( maybeDatum.unwrap, VestingDatum.type ) )
+
+     const signedByBeneficiary = tx.signatories.some( datum.beneficiary.eq )
 
     // inlined
-    const deadlineReached = 
-        pmatch( ctx.tx.interval.from.bound )
-        .onPFinite(({ _0: lowerInterval }) =>
+    const deadlineReached = plet(
+        pmatch( tx.interval.from.bound )
+        .onPFinite(({ n: lowerInterval }) =>
             datum.deadline.ltEq( lowerInterval ) 
         )
         ._( _ => pBool( false ) )
+    )
 
-    return (ptraceIfFalse.$(pdelay(pStr("Error in signedByBenificiary"))).$(signedByBeneficiary))
-    .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
+    return passert.$(
+        (ptraceIfFalse.$(pdelay(pStr("Error in signedByBenificiary"))).$(signedByBeneficiary))
+        .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
+      );
+
 });
 
 ///////////////////////////////////////////////////////////////////
@@ -28,12 +38,11 @@ export const contract = pfn([
 // ------------------------------------------------------------- //
 ///////////////////////////////////////////////////////////////////
 
-export const untypedValidator = makeValidator( contract );
 
-export const compiledContract = compile( untypedValidator );
+export const compiledContract = compile( contract );
 
 export const script = new Script(
-    ScriptType.PlutusV2,
+    ScriptType.PlutusV3,
     compiledContract
 );
 
