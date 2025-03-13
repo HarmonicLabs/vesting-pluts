@@ -23,7 +23,10 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
 
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
-
+    
+    const emulator: Emulator = new Emulator(utxosInit, defaultMainnetGenesisInfos, defaultProtocolParameters);
+    
+    
     const utxos = await Blockfrost.addressUtxos( address )
         .catch( e => { throw new Error ("unable to find utxos at " + addr) });
     // atleast has 10 ada
@@ -75,8 +78,12 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
     await tx.signWith( privateKey )
 
     const submittedTx = await Blockfrost.submitTx( tx );
+
     console.log(submittedTx);
     
+
+    emulator.awaitBlock(1)
+
 }
 
 if( process.argv[1].includes("claimVesting") )
