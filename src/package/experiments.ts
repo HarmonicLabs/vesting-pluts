@@ -4,39 +4,39 @@ import { getRandomValues } from "crypto"
 import { generateRandomBech32Address } from "./utils/helper"
 import { Emulator } from "./Emulator"
 
-const utxosInit: IUTxO[] = createRandomInitialUtxos(2)
+// const utxosInit: IUTxO[] = createRandomInitialUtxos(2)
 
-const emulator: Emulator = new Emulator(utxosInit, defaultMainnetGenesisInfos, defaultProtocolParameters);
+// const emulator: Emulator = new Emulator(utxosInit, defaultMainnetGenesisInfos, defaultProtocolParameters);
 
-const txBuilder = new TxBuilder (defaultProtocolParameters, defaultMainnetGenesisInfos)
+// const txBuilder = new TxBuilder (defaultProtocolParameters, defaultMainnetGenesisInfos)
 
-// Get the first utxo
-const utxo = emulator.getUtxos().values().next().value
-if (utxo === undefined) {
-    console.log("No utxo found")
-    process.exit(1)
-}
-// emulator.printUtxo(utxo)
-let tx = txBuilder.buildSync({
-    inputs: [utxo],
-    outputs: [],
-    changeAddress: utxo.resolved.address,
-});
+// // Get the first utxo
+// const utxo = emulator.getUtxos().values().next().value
+// if (utxo === undefined) {
+//     console.log("No utxo found")
+//     process.exit(1)
+// }
+// // emulator.printUtxo(utxo)
+// let tx = txBuilder.buildSync({
+//     inputs: [utxo],
+//     outputs: [],
+//     changeAddress: utxo.resolved.address,
+// });
 
-// Sign the transaction
+// // Sign the transaction
 
-const submittedTx = emulator.submitTx(tx)
+// const submittedTx = emulator.submitTx(tx)
 
-console.log(submittedTx)
-console.log("UTxO Ref ID:", utxo.utxoRef.id.toString());
-emulator.printMempool()
+// console.log(submittedTx)
+// console.log("UTxO Ref ID:", utxo.utxoRef.id.toString());
+// emulator.printMempool()
 
-emulator.awaitBlock(1)
+// emulator.awaitBlock(1)
 
-console.log("This mempool should be emptied")
-emulator.printMempool()
-console.log("End of mempool to check")
-// emulator.printUtxos(emulator.getUtxos())
+// console.log("This mempool should be emptied")
+// emulator.printMempool()
+// console.log("End of mempool to check")
+// // emulator.printUtxos(emulator.getUtxos())
 
 
 /**

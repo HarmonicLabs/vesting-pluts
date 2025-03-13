@@ -1,17 +1,15 @@
-import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType, IUTxO, defaultProtocolParameters, defaultMainnetGenesisInfos, TxBuilder } from "@harmoniclabs/plu-ts";
-// import { TxBuilder } from "@harmoniclabs/plu-ts-offchain";
+import {pBSToData, pByteString, pIntToData} from '@harmoniclabs/plu-ts';
+import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/cardano-ledger-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
-import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import blockfrost from "./blockfrost";
+// import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+// import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
-import { Emulator, experimentFunctions } from "../package"; //"@harmoniclabs/pluts-emulator";
 import { getEmulatorInstance } from "./emulatorInstance";
 
-async function createVesting(Blockfrost: BlockfrostPluts)
+async function createVesting() //(Blockfrost: BlockfrostPluts)
 {   
-    // const txBuilder = await getTxBuilder(Blockfrost);
-    const txBuilder = new TxBuilder (defaultProtocolParameters, defaultMainnetGenesisInfos)
+    const txBuilder = await getTxBuilder();
      
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
     const script = Script.fromCbor(JSON.parse(scriptFile).cborHex, ScriptType.PlutusV3)
@@ -41,7 +39,8 @@ async function createVesting(Blockfrost: BlockfrostPluts)
     //     throw new Error("No utxo with more than 10 ada");
     // }
 
-    const utxo = Array.from(emulator.getUtxos().values()).find(utxo => utxo.resolved.value.getLovelace() >= 15_000_000);
+    const utxos = emulator.getAddressUtxos(address)
+    const utxo = utxos?.find(utxo => utxo.resolved.value.lovelaces >=15_000_000);
     if (!utxo) {
         throw new Error("No UTxO with at least 15 ADA found");
     }
@@ -54,7 +53,7 @@ async function createVesting(Blockfrost: BlockfrostPluts)
         outputs: [
             {
                 address: scriptAddr,
-                value: Value.lovelaces( 10_000_000 ),
+                value: Value.lovelaces( 5_000_000 ),
                 datum: VestingDatum.VestingDatum({
                     beneficiary: pBSToData.$( pByteString( pkh.toBuffer() ) ),
                     deadline: pIntToData.$( nowPosix + 10_000 )
@@ -78,5 +77,5 @@ async function createVesting(Blockfrost: BlockfrostPluts)
 
 if( process.argv[1].includes("createVesting") )
 {
-    createVesting(blockfrost());
+    createVesting() //createVesting(blockfrost());
 }

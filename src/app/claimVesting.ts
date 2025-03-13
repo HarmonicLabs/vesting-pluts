@@ -1,12 +1,15 @@
-import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType } from "@harmoniclabs/plu-ts";
+import {DataI, DataConstr, DataB} from "@harmoniclabs/plu-ts";
+import { Address, Credential, PrivateKey, CredentialType, Script, PublicKey, ScriptType } from "@harmoniclabs/cardano-ledger-ts";
+import { defaultPreprodGenesisInfos } from "@harmoniclabs/buildooor";
 import getTxBuilder from "./getTxBuilder";
-import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import blockfrost from "./blockfrost";
+// import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+// import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
+import { getEmulatorInstance } from "./emulatorInstance";
 
-async function claimVesting(Blockfrost: BlockfrostPluts)
+async function claimVesting() //Blockfrost: BlockfrostPluts)
 {
-    const txBuilder = await getTxBuilder(Blockfrost);
+    const txBuilder = await getTxBuilder();
 
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
     const script = Script.fromCbor(JSON.parse(scriptFile).cborHex, ScriptType.PlutusV3)
@@ -24,19 +27,36 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
     
-    const emulator: Emulator = new Emulator(utxosInit, defaultMainnetGenesisInfos, defaultProtocolParameters);
     
-    
-    const utxos = await Blockfrost.addressUtxos( address )
-        .catch( e => { throw new Error ("unable to find utxos at " + addr) });
-    // atleast has 10 ada
-    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000);
+    const emulator = await getEmulatorInstance();
+
+    const utxo = emulator.getAddressUtxos(address)?.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000);
     if (!utxo) {
-        throw new Error("No utxo with more than 10 ada");
+        throw new Error("No UTxO with at least 15 ADA found");
     }
 
-    const scriptUtxos = await Blockfrost.addressUtxos( scriptAddr )
-        .catch( e => { throw new Error ("unable to find utxos at " + addr) });
+    // const scriptUtxos = await Blockfrost.addressUtxos( scriptAddr )
+    //     .catch( e => { throw new Error ("unable to find utxos at " + addr) });
+
+    // // matches with the pkh
+    // const scriptUtxo = scriptUtxos.find(utxo => {
+    //     if (utxo.resolved.datum instanceof DataConstr) { 
+    //      const pkhData = utxo.resolved.datum.fields[0]; 
+    //      if (pkhData instanceof DataB) {
+    //          return pkh.toString() == Buffer.from( pkhData.bytes.toBuffer() ).toString("hex")
+    //      }
+    //     }
+    //     return false; 
+    //  });
+    // if (!scriptUtxo) {
+    //     throw new Error ("No script utxo found for the pkh")
+    // }
+    
+    const scriptUtxos = emulator.getAddressUtxos(scriptAddr)
+    if (!scriptUtxos) {
+        throw new Error("unable to find utxos at " + addr);
+    }
+
     // matches with the pkh
     const scriptUtxo = scriptUtxos.find(utxo => {
         if (utxo.resolved.datum instanceof DataConstr) { 
@@ -47,10 +67,12 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
         }
         return false; 
      });
-    if (!scriptUtxo) {
+    if (!scriptUtxo) {  
         throw new Error ("No script utxo found for the pkh")
     }
-    
+        
+
+
     txBuilder.setGenesisInfos( defaultPreprodGenesisInfos )
 
     if (Buffer.from(script.hash.toBuffer()).toString("hex") !== Buffer.from(scriptAddr.paymentCreds.hash.toBuffer()).toString("hex")) {
@@ -72,12 +94,13 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
         requiredSigners: [ pkh ], // required to be included in script context
         collaterals: [ utxo ],
         changeAddress: address,
-        invalidBefore: (await Blockfrost.getChainTip()).slot!
+        // invalidBefore: (await Blockfrost.getChainTip()).slot!
     });
 
     await tx.signWith( privateKey )
 
-    const submittedTx = await Blockfrost.submitTx( tx );
+    // const submittedTx = await Blockfrost.submitTx( tx );
+    const submittedTx = await emulator.submitTx( tx );
 
     console.log(submittedTx);
     
@@ -88,5 +111,5 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
 
 if( process.argv[1].includes("claimVesting") )
 {
-    claimVesting(blockfrost());
+    claimVesting() //(blockfrost());
 }

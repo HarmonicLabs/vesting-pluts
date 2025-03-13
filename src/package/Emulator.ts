@@ -1,4 +1,4 @@
-import { AddressStr, CanBeTxOutRef, TxOutRef, defaultProtocolParameters, forceTxOutRefStr, isProtocolParameters, IUTxO, ProtocolParameters, StakeAddressBech32, Tx, TxOutRefStr, UTxO, Value } from "@harmoniclabs/cardano-ledger-ts"
+import { Address, AddressStr, CanBeTxOutRef, TxOutRef, defaultProtocolParameters, forceTxOutRefStr, isProtocolParameters, IUTxO, ProtocolParameters, StakeAddressBech32, Tx, TxOutRefStr, UTxO, Value } from "@harmoniclabs/cardano-ledger-ts"
 import { StakeAddressInfos } from "./types/StakeAddressInfos";
 import { CanResolveToUTxO, defaultMainnetGenesisInfos, GenesisInfos, IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, isGenesisInfos, ISubmitTx, normalizedGenesisInfos, NormalizedGenesisInfos, TxBuilder } from "@harmoniclabs/buildooor"
 import { Queue } from "./queue";
@@ -64,6 +64,12 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     getUtxos(): Map<TxOutRefStr, UTxO>
     {
         return new Map( this.utxos );
+    }
+    
+    getAddressUtxos( address: Address | AddressStr ): UTxO[] | undefined
+    { 
+        const utxos = Array.from(this.getUtxos().values()).filter( utxo => utxo.resolved.address.toString() === address.toString());
+        return utxos.length ? utxos : undefined;
     }
     
     private pushUtxo( utxo: UTxO ): void
@@ -178,14 +184,14 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
      * if some of the specified utxos are not present (have been spent already)
      * they will be filtered out
     */
-    // resolveUtxos( utxos: CanResolveToUTxO[] ): Promise<UTxO[]>
-    // {
-    //     return Promise.resolve(
-    //         [ ...new Set<TxOutRefStr>( utxos.map( forceTxOutRefStr ) ) ]
-    //         .map( ref => this.utxos.get( ref )?.clone() )
-    //         .filter( u => u instanceof UTxO ) as UTxO[]
-    //     );
-    // }
+    resolveUtxos( utxos: CanResolveToUTxO[] ): Promise<UTxO[]>
+    {
+        return Promise.resolve(
+            [ ...new Set<TxOutRefStr>( utxos.map( forceTxOutRefStr ) ) ]
+            .map( ref => this.utxos.get( ref )?.clone() )
+            .filter( u => u instanceof UTxO ) as UTxO[]
+        );
+    }
 
     /**
      * Print the mempool
@@ -194,14 +200,14 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
         console.log("Mempool:");
         for (let i = 0; i < this.mempool.size(); i++){
             console.log("Transaction ID:", this.mempool.asArray()[i].hash.toString());
-            console.log("Transaction Inputs:");
-            for (let j = 0; j < this.mempool.asArray()[i].body.inputs.length; j++){
-                console.log("  Input ID:", this.mempool.asArray()[i].body.inputs[j].toString());
-            }
-            console.log("Transaction Outputs:");
-            for (let j = 0; j < this.mempool.asArray()[i].body.outputs.length; j++){
-                console.log("  Output ID:", this.mempool.asArray()[i].body.outputs[j].toString());
-            }
+            // console.log("Transaction Inputs:");
+            // for (let j = 0; j < this.mempool.asArray()[i].body.inputs.length; j++){
+            //     console.log("  Input ID:", this.mempool.asArray()[i].body.inputs[j].toString());
+            // }
+            // console.log("Transaction Outputs:");
+            // for (let j = 0; j < this.mempool.asArray()[i].body.outputs.length; j++){
+            //     console.log("  Output ID:", this.mempool.asArray()[i].body.outputs[j].toString());
+            // }
         }
     }
     /**
@@ -300,6 +306,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
             return false;
         }
 
+        
         // Check if the transaction fee is sufficient
         const totalInputValue = tx.body.inputs.reduce((sum, input) => {
             const utxo = this.utxos.get(forceTxOutRefStr(input));
@@ -307,6 +314,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
         }, tx.body.mint ? tx.body.mint : Value.zero);
         const totalOutputValue = tx.body.outputs.reduce((sum, output) => Value.add(sum, output.value), Value.zero);
         const fee = Value.sub(totalInputValue, totalOutputValue).lovelaces;
+        console.log("fee : ", fee, this.txBuilder.calcMinFee(tx));
         if (fee < this.txBuilder.calcMinFee(tx)) {
             console.log("Invalid transaction: insufficient fee.");
             return false;

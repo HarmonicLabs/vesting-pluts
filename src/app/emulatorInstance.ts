@@ -1,5 +1,6 @@
 import { Emulator } from "../package";
-import { Address, IUTxO, defaultProtocolParameters, defaultMainnetGenesisInfos } from "@harmoniclabs/plu-ts";
+import { Address, IUTxO, defaultProtocolParameters } from "@harmoniclabs/cardano-ledger-ts";
+import { defaultMainnetGenesisInfos } from "@harmoniclabs/buildooor"
 import { experimentFunctions } from "../package";
 import { readFile } from "fs/promises";
 
