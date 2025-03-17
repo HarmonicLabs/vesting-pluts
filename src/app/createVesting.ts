@@ -69,7 +69,7 @@ async function createVesting() //(Blockfrost: BlockfrostPluts)
     // const submittedTx = await Blockfrost.submitTx( tx );
     const submittedTx = await emulator.submitTx( tx );
 
-    console.log(submittedTx);
+    console.log('submittedTx: ', submittedTx);
     
 
     emulator.awaitBlock(1)

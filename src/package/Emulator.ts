@@ -7,6 +7,7 @@ export class Emulator
 implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
 {
     private readonly utxos: Map<TxOutRefStr,UTxO>;
+    private readonly txUtxos: Map<TxOutRefStr,UTxO>;
     private readonly stakeAddresses: Map<StakeAddressBech32, StakeAddressInfos>;
     private readonly addresses: Map<AddressStr, Set<TxOutRefStr>>;
 
@@ -44,6 +45,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
         this.blockHeight = 0;
         
         this.utxos = new Map();
+        this.txUtxos = new Map();
         this.stakeAddresses = new Map();
         this.addresses = new Map();
 
@@ -263,24 +265,47 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     }
 
     /**
+     * fetch the UTxO associated with each tx input
+     */
+    private async resolveUtxo(input: CanBeTxOutRef): Promise<UTxO> {
+        const ref = forceTxOutRefStr(input);
+        const utxo = this.utxos.get(ref);
+        if (!utxo) {
+            throw new Error(`UTxO not found for input: ${ref}`);
+        }
+        return utxo;
+    }
+
+    /**
      * validates and submits a transaction to the emulated blockchain
     */
     submitTx( txCBOR: string | Tx ): Promise<string>
-    {
+    {   
+        this.txUtxos.clear();
         const tx = txCBOR instanceof Tx ? txCBOR : Tx.fromCbor( txCBOR );
-        if (this.isTxValid(tx)) {
-            this.mempool.enqueue( tx );
-        }
-        else {
+        
+        if (!this.isTxValid(tx)) {
             // Add a debug level and some more useful information
             console.log("Transaction is invalid")
         }
 
+        this.mempool.enqueue( tx );
+
         return Promise.resolve( tx.hash.toString() );
     }
-    
-    private isTxValid(tx: Tx): boolean {
 
+    private async isTxValid(tx: Tx): Promise<boolean> {
+        
+        // Resolve the source addresses from the inputs
+        const allTxUtxos = await Promise.all(
+            tx.body.inputs.map(async input => {
+                const utxo = await this.resolveUtxo(input);
+                this.txUtxos.set(utxo.utxoRef.toString(), utxo);
+                return utxo;
+            })
+        );
+        console.log(this.txUtxos)
+        
         // Check if the transaction has at least one input and one output
         if (tx.body.inputs.length === 0) {
             console.log("Invalid transaction: no inputs.");
@@ -293,7 +318,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
 
         // Check if all inputs are unspent
         for (const input of tx.body.inputs) {
-            if (!this.utxos.has(forceTxOutRefStr(input))) {
+            if (!this.txUtxos.has(forceTxOutRefStr(input))) {
                 console.log(`Invalid transaction: input ${input.toString()} is already spent.`);
                 return false;
             }
@@ -309,7 +334,8 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
         
         // Check if the transaction fee is sufficient
         const totalInputValue = tx.body.inputs.reduce((sum, input) => {
-            const utxo = this.utxos.get(forceTxOutRefStr(input));
+            const utxo = this.txUtxos.get(forceTxOutRefStr(input));
+            console.log('utxo resolved value : ', utxo?.resolved.value);
             return Value.add(sum, utxo ? utxo.resolved.value : Value.zero);
         }, tx.body.mint ? tx.body.mint : Value.zero);
         const totalOutputValue = tx.body.outputs.reduce((sum, output) => Value.add(sum, output.value), Value.zero);
