@@ -10,9 +10,9 @@
     "vesting:compile": "npm run start",
     "vesting:setup": "npm run build:light && node dist/app/setup.js",
     "vesting:genKeys": "npm run build:light && node dist/app/genKeys.js",
-    "vesting:returnFaucet": "npm run build:light && node dist/app/returnFaucet.js",
-    "vesting:create": "npm run build:light && node dist/app/createVesting.js",
-    "vesting:claim": "npm run build:light && node dist/app/claimVesting.js"
+    "vesting:returnFaucet": "npm run build:light && RUN_BY=${RUN_BY:-blockfrost} node dist/app/returnFaucet.js",
+    "vesting:create": "npm run build:light && RUN_BY=${RUN_BY:-blockfrost} node dist/app/createVesting.js",
+    "vesting:claim": "npm run build:light && RUN_BY=${RUN_BY:-blockfrost} node dist/app/claimVesting.js"
   },
   "dependencies": {
     "@harmoniclabs/blockfrost-pluts": "^0.1.15",

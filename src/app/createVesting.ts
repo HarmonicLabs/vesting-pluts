@@ -2,12 +2,13 @@ import {pBSToData, pByteString, pIntToData} from '@harmoniclabs/plu-ts';
 import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
-// import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-// import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
 import { getEmulatorInstance } from "./emulatorInstance";
+import { onEmulator } from './utils';
+import { BlockfrostPluts } from '@harmoniclabs/blockfrost-pluts';
+import blockfrost from './blockfrost';
 
-async function createVesting() //(Blockfrost: BlockfrostPluts)
+async function createVesting()
 {   
     const txBuilder = await getTxBuilder();
      
@@ -27,20 +28,18 @@ async function createVesting() //(Blockfrost: BlockfrostPluts)
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
 
-
+    let utxos = undefined;
     const emulator = await getEmulatorInstance();
+    const Blockfrost: BlockfrostPluts = blockfrost();
 
-    // const utxos = await Blockfrost.addressUtxos( address )
-    //     .catch( e => { throw new Error ("unable to find utxos at " + addr) })
-
-    // // atleast has 10 ada
-    // const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000)!;
-    // if (!utxo) {
-    //     throw new Error("No utxo with more than 10 ada");
-    // }
-
-    const utxos = emulator.getAddressUtxos(address)
-    const utxo = utxos?.find(utxo => utxo.resolved.value.lovelaces >=15_000_000);
+    if (onEmulator()) {
+        utxos = emulator.getAddressUtxos(address)
+    } else {
+        utxos = await Blockfrost.addressUtxos( address )
+            .catch( e => { throw new Error ("unable to find utxos at " + addr) })
+    }
+console.log('utxos: ', utxos)
+    const utxo = utxos?.find(utxo => utxo.resolved.value.lovelaces >=15_000_000); console.log('utxo: ', utxo)
     if (!utxo) {
         throw new Error("No UTxO with at least 15 ADA found");
     }
@@ -65,17 +64,14 @@ async function createVesting() //(Blockfrost: BlockfrostPluts)
     
     await tx.signWith( new PrivateKey(privateKey) );
 
-
-    // const submittedTx = await Blockfrost.submitTx( tx );
-    const submittedTx = await emulator.submitTx( tx );
+    const submittedTx = onEmulator() ? await emulator.submitTx( tx ) : await Blockfrost.submitTx( tx );
 
     console.log('submittedTx: ', submittedTx);
-    
 
-    emulator.awaitBlock(1)
+    onEmulator() && emulator.awaitBlock(1)
 }
 
 if( process.argv[1].includes("createVesting") )
 {
-    createVesting() //createVesting(blockfrost());
+    createVesting()
 }

@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const hexToUint8Array = (hexString: any) => {
     if (hexString.length % 2 !== 0) {
@@ -9,3 +11,7 @@ export const hexToUint8Array = (hexString: any) => {
     }
     return array;
 }
+
+export const onEmulator = () => {
+  return process.env.RUN_BY === "emulator";
+};

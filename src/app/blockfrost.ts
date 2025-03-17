@@ -1,19 +1,19 @@
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 
-function blockfrost () {
-    const provider = new BlockfrostPluts({
-        projectId: "preprodQvxYeuM9m6aAIcean8oNAPSGOFoYKHVa" //"previewjAJpYnCrWS07h55R8Udg9W3Nw55xhaRt"
-    });
-    return provider;
+import dotenv from 'dotenv';
+dotenv.config();
+
+let blockfrostInstance: BlockfrostPluts | null = null;
+
+export default function blockfrost(): BlockfrostPluts { 
+    if (!blockfrostInstance) {
+        const project_id = process.env.BLOCKFROST_PROJECT_ID;
+        if (!project_id) {
+            throw new Error("BLOCKFROST_PROJECT_ID is not set");
+        }
+        blockfrostInstance = new BlockfrostPluts({
+            projectId: project_id,
+        });
+    }
+    return blockfrostInstance;
 }
-
-export default blockfrost;
-
-// import { Emulator } from "@harmoniclabs/pluts-emulator";
-
-// function blockfrost() {
-//     const provider = new Emulator();
-//     return provider;
-// }
-
-// export default blockfrost;
