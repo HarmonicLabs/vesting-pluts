@@ -1,4 +1,4 @@
-import { Address, AddressStr, CanBeTxOutRef, TxOutRef, defaultProtocolParameters, forceTxOutRefStr, isProtocolParameters, IUTxO, ProtocolParameters, StakeAddressBech32, Tx, TxOutRefStr, UTxO, Value } from "@harmoniclabs/cardano-ledger-ts"
+import { Address, AddressStr, CanBeTxOutRef, TxOutRef, defaultProtocolParameters, forceTxOutRefStr, isProtocolParameters, IUTxO, ProtocolParameters, StakeAddressBech32, Tx, TxOutRefStr, UTxO, Value } from "@harmoniclabs/plu-ts"
 import { StakeAddressInfos } from "./types/StakeAddressInfos";
 import { CanResolveToUTxO, defaultMainnetGenesisInfos, GenesisInfos, IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, isGenesisInfos, ISubmitTx, normalizedGenesisInfos, NormalizedGenesisInfos, TxBuilder } from "@harmoniclabs/buildooor"
 import { Queue } from "./queue";
@@ -305,7 +305,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
             })
         );
         console.log(this.txUtxos)
-        
+
         // Check if the transaction has at least one input and one output
         if (tx.body.inputs.length === 0) {
             console.log("Invalid transaction: no inputs.");

@@ -1,5 +1,5 @@
 import {DataI, DataConstr, DataB} from "@harmoniclabs/plu-ts";
-import { Address, Credential, PrivateKey, CredentialType, Script, PublicKey, ScriptType } from "@harmoniclabs/cardano-ledger-ts";
+import { Address, Credential, PrivateKey, CredentialType, Script, PublicKey, ScriptType } from "@harmoniclabs/plu-ts";
 import { defaultPreprodGenesisInfos } from "@harmoniclabs/buildooor";
 import getTxBuilder from "./getTxBuilder";
 // import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";

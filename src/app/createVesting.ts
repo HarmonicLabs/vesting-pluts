@@ -1,5 +1,5 @@
 import {pBSToData, pByteString, pIntToData} from '@harmoniclabs/plu-ts';
-import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/cardano-ledger-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
+import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
 // import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
