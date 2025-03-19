@@ -140,11 +140,14 @@ import { getEmulatorInstance } from "./emulatorInstance";
         console.log(submittedTx);
         
 
-        emulator.awaitBlock(1)
+        emulator.awaitBlock(1);
 
     }
 
-    createVesting()
-    claimVesting()
+    createVesting();
+    const timeout = setTimeout(() => {
+        clearTimeout(timeout);
+        claimVesting();
+    }, 15000)
 
 })()
