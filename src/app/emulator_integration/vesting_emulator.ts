@@ -141,6 +141,7 @@ import { getEmulatorInstance } from "./emulatorInstance";
         
         emulator.awaitBlock(1);
 
+        emulator.printAllUTXOs();
     }
 
     await createVesting();

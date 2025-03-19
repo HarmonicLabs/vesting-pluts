@@ -85,6 +85,10 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     getCurrentTime() {
         return this.time;
     }
+
+    printAllUTXOs() {
+        this.printUtxos(this.utxos, this.debugLevel);
+    }
     
     private pushUtxo( utxo: UTxO ): void
     {
@@ -240,6 +244,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     printUtxo(utxo: UTxO, debugLevel: number = 1): void {
         console.log("UTxO Ref ID:", utxo.utxoRef.id.toString());
         console.log("UTxO Ref Index:", utxo.utxoRef.index);
+        console.log("Address:", utxo.resolved.address.toString());
         if (debugLevel > 2) {
             console.log("Address Type:", utxo.resolved.address.type);
         }
