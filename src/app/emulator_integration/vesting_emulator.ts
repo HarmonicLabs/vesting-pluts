@@ -47,7 +47,7 @@ import { getEmulatorInstance } from "./emulatorInstance";
                     value: Value.lovelaces( 5_000_000 ),
                     datum: VestingDatum.VestingDatum({
                         beneficiary: pBSToData.$( pByteString( pkh.toBuffer() ) ),
-                        deadline: pIntToData.$( nowPosix + 10_000 )
+                        deadline: pIntToData.$( emulator.getCurrentTime() + 5_000 ) //pIntToData.$( nowPosix + 10_000 )
                     })
                 }
             ],
@@ -58,7 +58,7 @@ import { getEmulatorInstance } from "./emulatorInstance";
 
         const submittedTx = await emulator.submitTx( tx );
 
-        console.log('submittedTx: ', submittedTx);
+        console.log('in Create, submittedTx: ', submittedTx);
 
         emulator.awaitBlock(1)
     }
@@ -130,24 +130,21 @@ import { getEmulatorInstance } from "./emulatorInstance";
             requiredSigners: [ pkh ], // required to be included in script context
             collaterals: [ utxo ],
             changeAddress: address,
-            invalidBefore: emulator.getCurrentSlot()
+            invalidBefore: emulator.getCurrentTime()
         });
 
         await tx.signWith( privateKey )
 
         const submittedTx = await emulator.submitTx( tx ) ;
         
-        console.log(submittedTx);
+        console.log('in Claim, submittedTx: ',submittedTx);
         
-
         emulator.awaitBlock(1);
 
     }
 
-    createVesting();
-    const timeout = setTimeout(() => {
-        clearTimeout(timeout);
-        claimVesting();
-    }, 15000)
+    await createVesting();
+    await emulator.awaitBlock(5);
+    await claimVesting();
 
 })()

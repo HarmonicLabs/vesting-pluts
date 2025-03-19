@@ -81,6 +81,10 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     getCurrentSlot(): number {
         return this.slot;
     }
+
+    getCurrentTime() {
+        return this.time;
+    }
     
     private pushUtxo( utxo: UTxO ): void
     {
