@@ -1,7 +1,6 @@
-import { Emulator } from "../../package";
 import { Address, IUTxO, defaultProtocolParameters } from "@harmoniclabs/plu-ts";
 import { defaultMainnetGenesisInfos } from "@harmoniclabs/buildooor"
-import { experimentFunctions } from "../../package";
+import { Emulator, experimentFunctions } from "@harmoniclabs/pluts-emulator";
 import { readFile } from "fs/promises";
 
 async function initializeEmulator(): Promise<Emulator> {
