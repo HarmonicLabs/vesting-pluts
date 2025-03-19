@@ -71,7 +71,15 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     getAddressUtxos( address: Address | AddressStr ): UTxO[] | undefined
     { 
         const utxos = Array.from(this.getUtxos().values()).filter( utxo => utxo.resolved.address.toString() === address.toString());
+        
+        console.log('All UTXOs :')
+        Array.from(this.getUtxos().values()).forEach(utxo => console.log(utxo.resolved.value.lovelaces, utxo.resolved.address.toString()))
+        
         return utxos.length ? utxos : undefined;
+    }
+
+    getCurrentSlot(): number {
+        return this.slot;
     }
     
     private pushUtxo( utxo: UTxO ): void
@@ -199,7 +207,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
      * Print the mempool
      */
     printMempool(): void {
-        console.log("Mempool:");
+        console.log("Mempool:", this.mempool.size());
         for (let i = 0; i < this.mempool.size(); i++){
             console.log("Transaction ID:", this.mempool.asArray()[i].hash.toString());
             // console.log("Transaction Inputs:");

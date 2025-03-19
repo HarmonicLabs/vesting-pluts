@@ -1,14 +1,11 @@
-import {pBSToData, pByteString, pIntToData} from '@harmoniclabs/plu-ts';
-import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
+import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
+import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
-import { getEmulatorInstance } from "./emulatorInstance";
-import { onEmulator } from './utils';
-import { BlockfrostPluts } from '@harmoniclabs/blockfrost-pluts';
-import blockfrost from './blockfrost';
 
-async function createVesting()
+async function createVesting(Blockfrost: BlockfrostPluts)
 {   
     const txBuilder = await getTxBuilder();
      
@@ -28,20 +25,13 @@ async function createVesting()
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
 
-    let utxos = undefined;
-    const emulator = await getEmulatorInstance();
-    const Blockfrost: BlockfrostPluts = blockfrost();
+    const utxos = await Blockfrost.addressUtxos( address )
+        .catch( e => { throw new Error ("unable to find utxos at " + addr) })
 
-    if (onEmulator()) {
-        utxos = emulator.getAddressUtxos(address)
-    } else {
-        utxos = await Blockfrost.addressUtxos( address )
-            .catch( e => { throw new Error ("unable to find utxos at " + addr) })
-    }
-console.log('utxos: ', utxos)
-    const utxo = utxos?.find(utxo => utxo.resolved.value.lovelaces >=15_000_000); console.log('utxo: ', utxo)
+    // atleast has 10 ada
+    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000)!;
     if (!utxo) {
-        throw new Error("No UTxO with at least 15 ADA found");
+        throw new Error("No utxo with more than 10 ada");
     }
 
     const nowPosix = Date.now();
@@ -52,7 +42,7 @@ console.log('utxos: ', utxos)
         outputs: [
             {
                 address: scriptAddr,
-                value: Value.lovelaces( 5_000_000 ),
+                value: Value.lovelaces( 10_000_000 ),
                 datum: VestingDatum.VestingDatum({
                     beneficiary: pBSToData.$( pByteString( pkh.toBuffer() ) ),
                     deadline: pIntToData.$( nowPosix + 10_000 )
@@ -64,14 +54,12 @@ console.log('utxos: ', utxos)
     
     await tx.signWith( new PrivateKey(privateKey) );
 
-    const submittedTx = onEmulator() ? await emulator.submitTx( tx ) : await Blockfrost.submitTx( tx );
-
-    console.log('submittedTx: ', submittedTx);
-
-    onEmulator() && emulator.awaitBlock(1)
+    const submittedTx = await Blockfrost.submitTx( tx );
+    console.log(submittedTx);
+    
 }
 
 if( process.argv[1].includes("createVesting") )
 {
-    createVesting()
+    createVesting(blockfrost());
 }

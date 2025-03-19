@@ -3,7 +3,6 @@ import { Address, ITxBuildInput, IUTxO, PrivateKey } from "@harmoniclabs/plu-ts"
 import { readFile } from "fs/promises";
 import blockfrost from "./blockfrost";
 import getTxBuilder from "./getTxBuilder";
-import { onEmulator } from "./utils";
 
 async function returnFaucet()
 {
@@ -41,7 +40,7 @@ async function returnFaucet()
     const submittedTx = await Blockfrost.submitTx( returnTADATx );
     console.log(submittedTx);
 }
-if( process.argv[1].includes("returnFaucet") && !onEmulator())
+if( process.argv[1].includes("returnFaucet"))
 {
     returnFaucet();
 }

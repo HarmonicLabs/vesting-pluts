@@ -13,5 +13,5 @@ export const hexToUint8Array = (hexString: any) => {
 }
 
 export const onEmulator = () => {
-  return process.env.RUN_BY === "emulator";
+  return process.argv[1].includes("emulator") ;
 };

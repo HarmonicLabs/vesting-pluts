@@ -1,7 +1,7 @@
-import { Emulator } from "../package";
+import { Emulator } from "../../package";
 import { Address, IUTxO, defaultProtocolParameters } from "@harmoniclabs/plu-ts";
 import { defaultMainnetGenesisInfos } from "@harmoniclabs/buildooor"
-import { experimentFunctions } from "../package";
+import { experimentFunctions } from "../../package";
 import { readFile } from "fs/promises";
 
 async function initializeEmulator(): Promise<Emulator> {
@@ -21,6 +21,7 @@ async function initializeEmulator(): Promise<Emulator> {
     const utxo2: IUTxO = experimentFunctions.createInitialUTxO(15000000n, address2, utxoHash2);
     utxosInit.push(utxo2);
 
+    console.log(addr1, addr2)
     return new Emulator(utxosInit, defaultMainnetGenesisInfos, defaultProtocolParameters);
 }
 
