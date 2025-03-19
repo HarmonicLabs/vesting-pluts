@@ -279,7 +279,7 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
     /**
      * validates and submits a transaction to the emulated blockchain
     */
-    submitTx( txCBOR: string | Tx ): Promise<string>
+    async submitTx( txCBOR: string | Tx ): Promise<string>
     {   
         this.txUtxos.clear();
         const tx = txCBOR instanceof Tx ? txCBOR : Tx.fromCbor( txCBOR );
@@ -304,7 +304,6 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
                 return utxo;
             })
         );
-        console.log(this.txUtxos)
 
         // Check if the transaction has at least one input and one output
         if (tx.body.inputs.length === 0) {
@@ -333,18 +332,15 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
 
         
         // Check if the transaction fee is sufficient
-        const totalInputValue = tx.body.inputs.reduce((sum, input) => {
-            const utxo = this.txUtxos.get(forceTxOutRefStr(input));
-            console.log('utxo resolved value : ', utxo?.resolved.value);
-            return Value.add(sum, utxo ? utxo.resolved.value : Value.zero);
-        }, tx.body.mint ? tx.body.mint : Value.zero);
-        const totalOutputValue = tx.body.outputs.reduce((sum, output) => Value.add(sum, output.value), Value.zero);
-        const fee = Value.sub(totalInputValue, totalOutputValue).lovelaces;
-        console.log("fee : ", fee, this.txBuilder.calcMinFee(tx));
-        if (fee < this.txBuilder.calcMinFee(tx)) {
+        const fee = tx.body.fee;
+        // calMinFee guesses that we have atleast one signer for the tx
+        // calLinearFee calculates with the signer; so here we should be using this
+        if (fee < this.txBuilder.calcLinearFee(tx)) {
             console.log("Invalid transaction: insufficient fee.");
             return false;
         }
+
+        //  TBD validity ranges
 
         return true;
     }
