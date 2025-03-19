@@ -14,9 +14,9 @@ To run the vesting example, go through the below sequence:
 4. `npm run vesting:emulator`
     - Initializes emulator populating UTXOs for generated addresses
     - Invokes _create_ of _vesting contract_   
-        Build Tx, sign and submit the Tx; then invoke `awaitBlock(1)` to dequeue the Tx from Mempool to next Block.
+        - Build Tx, sign and submit the Tx; then invoke `awaitBlock(1)` to dequeue the Tx from Mempool to next Block.
     - `await awaitBlock(5)` to assume few blocks have passed so that claim transaction is valid, as it is dependent on the deadline condition being met.
     - Invokes _claim_ of _contract_ after a timeout 
-        Build, sign and submit the Tx; then invoke `awaitBlock(1)` to dequeue the Tx from Mempool to next Block.
+        - Build, sign and submit the Tx; then invoke `awaitBlock(1)` to dequeue the Tx from Mempool to next Block.
     
 

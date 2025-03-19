@@ -124,46 +124,56 @@ implements IGetGenesisInfos, IGetProtocolParameters, IResolveUTxOs, ISubmitTx
 
             this.blockHeight += 1;
             console.log(`Block ${this.blockHeight}`);
-            
-            this.slot += height * (this.genesisInfos.slotLengthMs / 1000);
-            this.time += height * this.genesisInfos.slotLengthMs;
+            const isMempoolEmpty = this.mempool.isEmpty();
 
-            let currentBlockUsed = 0
+            if (isMempoolEmpty) {
+                // Advance by the remaining height in one step
+                this.slot += height * (this.genesisInfos.slotLengthMs / 1000);
+                this.time += height * this.genesisInfos.slotLengthMs;
+    
+                console.log(`Mempool is empty. Advanced by ${height} blocks.`);
+                height = 0; // Exit the loop
+            } else {
+                // Advance by 1 block
+                this.slot += (this.genesisInfos.slotLengthMs / 1000);
+                this.time += this.genesisInfos.slotLengthMs;
 
-            while (!this.mempool.isEmpty()) {
-                let txSize = this.getTxSize(this.mempool.peek())
-                
-                // check if tx size can fit in the block
-                if (txSize && ((currentBlockUsed + txSize) <= this.maxBlockBodySize)) { //200 
-                    const tx = this.mempool.dequeue()!;
-                    const txHash = tx.hash.toString();
+                let currentBlockUsed = 0
 
-                    for (let i = 0; i < tx.body.inputs.length; i++){
-                        this.removeUtxo(tx.body.inputs[i])
+                while (!this.mempool.isEmpty()) {
+                    let txSize = this.getTxSize(this.mempool.peek())
+                    // check if tx size can fit in the block
+                    if (txSize && ((currentBlockUsed + txSize) <= this.maxBlockBodySize)) { //200 
+                        const tx = this.mempool.dequeue()!;
+                        const txHash = tx.hash.toString();
+
+                        for (let i = 0; i < tx.body.inputs.length; i++){
+                            this.removeUtxo(tx.body.inputs[i])
+                        }
+                        for (let i = 0; i < tx.body.outputs.length; i++){
+                            this.pushUtxo(new UTxO({
+                                resolved: tx.body.outputs[i],
+                                utxoRef: new TxOutRef({
+                                    id: txHash,
+                                    index: i
+                                })
+                            }))
+                        }
+                        console.log('Dequeued from mempool: ', txHash)
+                        currentBlockUsed += txSize;
+
+                        txSize = this.getTxSize(this.mempool.peek())
+
+                    } else {
+                        console.warn("Transaction too large to fit in block. Skipping transaction.");
+                        break;
                     }
-                    for (let i = 0; i < tx.body.outputs.length; i++){
-                        this.pushUtxo(new UTxO({
-                            resolved: tx.body.outputs[i],
-                            utxoRef: new TxOutRef({
-                                id: txHash,
-                                index: i
-                            })
-                        }))
-                    }
-                    console.log('Dequeued from mempool: ', txHash)
-                    currentBlockUsed += txSize;
-
-                    txSize = this.getTxSize(this.mempool.peek())
-
-                } else {
-                    console.warn("Transaction too large to fit in block. Skipping transaction.");
-                    break;
                 }
-            }
 
-            console.log(`Advanced to block number ${this.blockHeight} (slot ${this.slot}). Time: ${new Date(this.time).toISOString()}`);
-        
-            height -= 1;
+                console.log(`Advanced to block number ${this.blockHeight} (slot ${this.slot}). Time: ${new Date(this.time).toISOString()}`);
+                
+                height -= 1;
+            }
         }
     }
    
