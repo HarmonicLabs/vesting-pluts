@@ -1,5 +1,5 @@
 import {DataB, DataConstr, DataI, pBSToData, pByteString, pIntToData} from '@harmoniclabs/plu-ts';
-import { Address, Credential, Hash28, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts"; //, defaultMainnetGenesisInfos, TxBuilder   "@harmoniclabs/plu-ts";
+import { Address, Credential, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts";
 import { defaultPreprodGenesisInfos } from "@harmoniclabs/buildooor";
 import { readFile } from "fs/promises";
 
