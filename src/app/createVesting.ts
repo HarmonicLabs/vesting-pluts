@@ -7,7 +7,7 @@ import { readFile } from "fs/promises";
 
 async function createVesting(Blockfrost: BlockfrostPluts)
 {   
-    const txBuilder = await getTxBuilder(Blockfrost);
+    const txBuilder = await getTxBuilder();
      
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
     const script = Script.fromCbor(JSON.parse(scriptFile).cborHex, ScriptType.PlutusV3)

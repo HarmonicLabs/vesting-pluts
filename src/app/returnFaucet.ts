@@ -4,8 +4,9 @@ import { readFile } from "fs/promises";
 import blockfrost from "./blockfrost";
 import getTxBuilder from "./getTxBuilder";
 
-async function returnFaucet(Blockfrost: BlockfrostPluts)
+async function returnFaucet()
 {
+    const Blockfrost: BlockfrostPluts = blockfrost();
     const utxos: (ITxBuildInput | IUTxO)[] = [];
     const pvtKeys: PrivateKey[] = [];
     
@@ -23,7 +24,7 @@ async function returnFaucet(Blockfrost: BlockfrostPluts)
     }
 
 
-    const txBuilder = await getTxBuilder(Blockfrost);
+    const txBuilder = await getTxBuilder();
 
     let returnTADATx = await txBuilder.buildSync({
         inputs: utxos as any,
@@ -39,7 +40,7 @@ async function returnFaucet(Blockfrost: BlockfrostPluts)
     const submittedTx = await Blockfrost.submitTx( returnTADATx );
     console.log(submittedTx);
 }
-if( process.argv[1].includes("returnFaucet") )
+if( process.argv[1].includes("returnFaucet"))
 {
-    returnFaucet(blockfrost());
+    returnFaucet();
 }
