@@ -13,13 +13,13 @@
     "vesting:returnFaucet": "npm run build:light && node dist/app/returnFaucet.js",
     "vesting:create": "npm run build:light && node dist/app/createVesting.js",
     "vesting:claim": "npm run build:light && node dist/app/claimVesting.js",
-    "vesting:emulator": "npm run build:light && node dist/app/emulator_integration/vesting_emulator.js"
+    "vesting:emulator": "npm run build:light && node dist/app/emulator_integration/vesting_emulator.js",
+    "test:emulator": "npm run build:light && node dist/app/testE2E.js --emulator"
   },
   "dependencies": {
     "@harmoniclabs/blockfrost-pluts": "^0.1.15",
     "@harmoniclabs/buildooor": "^0.1.2",
     "@harmoniclabs/plu-ts": "^0.9.0",
-    "@harmoniclabs/pluts-emulator": "^0.0.1-dev2",
     "blakejs": "^1.2.1",
     "dotenv": "^16.0.3"
   },

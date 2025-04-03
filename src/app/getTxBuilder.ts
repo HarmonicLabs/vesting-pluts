@@ -1,26 +1,50 @@
+import { TxBuilder, defaultMainnetGenesisInfos } from "@harmoniclabs/buildooor";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import { defaultProtocolParameters, defaultMainnetGenesisInfos, TxBuilder } from "@harmoniclabs/buildooor";
-import blockfrost from "./blockfrost";
-import { onEmulator } from "./utils";
+import { Emulator } from "./package";
+import { defaultProtocolParameters } from "@harmoniclabs/plu-ts";
+
+// Cache for the TxBuilder to avoid redundant API calls
+let cachedTxBuilder: TxBuilder | undefined = undefined;
 
 /**
- * we don't want to do too many API call if we already have our `txBuilder`
- * 
- * so after the first call we'll store a copy here.
-**/
-let _cachedTxBuilder: TxBuilder | undefined = undefined;
+ * Creates a TxBuilder with the appropriate protocol parameters and genesis infos
+ * Caches the result to avoid redundant API calls
+ * @param provider Optional provider (Blockfrost or Emulator) to use for protocol parameters and genesis infos
+ * @returns A configured TxBuilder instance
+ */
+export default async function getTxBuilder(provider?: BlockfrostPluts | Emulator): Promise<TxBuilder> {
+  // Return cached TxBuilder if available and no provider is specified
+  if (cachedTxBuilder && !provider) {
+    return cachedTxBuilder;
+  }
 
-export default async function getTxBuilder(): Promise<TxBuilder>
-{
-    if(!( _cachedTxBuilder instanceof TxBuilder )) {
-        if (onEmulator()) {
-            _cachedTxBuilder = new TxBuilder (defaultProtocolParameters, defaultMainnetGenesisInfos)
-        }
-        else {
-            const Blockfrost: BlockfrostPluts = blockfrost();
-            const parameters = await Blockfrost.getProtocolParameters();
-            _cachedTxBuilder = new TxBuilder(parameters);
-        }
+  if (provider) {
+    // Use the provided provider to get protocol parameters and genesis infos
+    const [protocolParameters, genesisInfos] = await Promise.all([
+      provider.getProtocolParameters(),
+      provider.getGenesisInfos()
+    ]);
+
+    const txBuilder = new TxBuilder(
+      protocolParameters,
+      genesisInfos
+    );
+
+    // Cache the TxBuilder for future use
+    if (!cachedTxBuilder) {
+      cachedTxBuilder = txBuilder;
     }
-    return _cachedTxBuilder;
+
+    return txBuilder;
+  } else {
+    // Use default values if no provider is provided
+    if (!cachedTxBuilder) {
+      cachedTxBuilder = new TxBuilder(
+        defaultProtocolParameters,
+        defaultMainnetGenesisInfos
+      );
+    }
+    
+    return cachedTxBuilder;
+  }
 }

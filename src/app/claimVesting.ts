@@ -1,11 +1,16 @@
-import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType, IProvider } from "@harmoniclabs/plu-ts";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
+import { Emulator } from "./package";
 
-async function claimVesting(Blockfrost: BlockfrostPluts)
-{
+/**
+ * Claims funds from a vesting contract
+ * @param provider The provider to use (Blockfrost or Emulator)
+ * @returns The transaction hash
+ */
+export async function claimVesting(provider: BlockfrostPluts | Emulator): Promise<string> {
     const txBuilder = await getTxBuilder();
 
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
@@ -16,43 +21,50 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
     );
     
     const privateKeyFile = await readFile("./testnet/payment2.skey", { encoding: "utf-8" });
-    const privateKey = PrivateKey.fromCbor( JSON.parse(privateKeyFile).cborHex );
+    const privateKey = PrivateKey.fromCbor(JSON.parse(privateKeyFile).cborHex);
 
     const addr = await readFile("./testnet/address2.addr", { encoding: "utf-8" });
     const address = Address.fromString(addr);
 
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
-    const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
+    const pkh = PublicKey.fromCbor(JSON.parse(publicKeyFile).cborHex).hash;
 
-    const utxos = await Blockfrost.addressUtxos( address )
-        .catch( e => { throw new Error ("unable to find utxos at " + addr) });
-    // atleast has 10 ada
+    const utxos = await provider.addressUtxos(address)
+        .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
+        
+    // At least has 15 ADA
     const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000);
     if (!utxo) {
-        throw new Error("No utxo with more than 10 ada");
+        throw new Error("No UTxO with more than 15 ADA");
     }
 
-    const scriptUtxos = await Blockfrost.addressUtxos( scriptAddr )
-        .catch( e => { throw new Error ("unable to find utxos at " + addr) });
-    // matches with the pkh
+    const scriptUtxos = await provider.addressUtxos(scriptAddr)
+        .catch(e => { throw new Error(`Unable to find UTxOs at script address: ${e.message}`) });
+        
+    // Find the script UTxO that matches our public key hash
     const scriptUtxo = scriptUtxos.find(utxo => {
         if (utxo.resolved.datum instanceof DataConstr) { 
-         const pkhData = utxo.resolved.datum.fields[0]; 
-         if (pkhData instanceof DataB) {
-             return pkh.toString() == Buffer.from( pkhData.bytes.toBuffer() ).toString("hex")
-         }
+            const pkhData = utxo.resolved.datum.fields[0]; 
+            if (pkhData instanceof DataB) {
+                return pkh.toString() === Buffer.from(pkhData.bytes.toBuffer()).toString("hex");
+            }
         }
         return false; 
-     });
+    });
+    
     if (!scriptUtxo) {
-        throw new Error ("No script utxo found for the pkh")
+        throw new Error("No script UTxO found for the pkh");
     }
     
-    txBuilder.setGenesisInfos( defaultPreprodGenesisInfos )
+    txBuilder.setGenesisInfos(defaultPreprodGenesisInfos);
 
     if (Buffer.from(script.hash.toBuffer()).toString("hex") !== Buffer.from(scriptAddr.paymentCreds.hash.toBuffer()).toString("hex")) {
         throw new Error("Script hash and script address hash do not match");
     }
+
+    // Get chain tip to set correct validity timeframe
+    const chainTip = await provider.getChainTip();
+    const invalidBefore = chainTip.slot!;
 
     let tx = await txBuilder.buildSync({
         inputs: [
@@ -62,24 +74,20 @@ async function claimVesting(Blockfrost: BlockfrostPluts)
                 inputScript: {
                     script: script,
                     datum: "inline",
-                    redeemer: new DataI( 0 )
+                    redeemer: new DataI(0)
                 }
             }
         ],
-        requiredSigners: [ pkh ], // required to be included in script context
-        collaterals: [ utxo ],
+        requiredSigners: [pkh],
+        collaterals: [utxo],
         changeAddress: address,
-        invalidBefore: (await Blockfrost.getChainTip()).slot!
+        invalidBefore: invalidBefore
     });
 
-    await tx.signWith( privateKey )
+    await tx.signWith(privateKey);
 
-    const submittedTx = await Blockfrost.submitTx( tx );
-    console.log(submittedTx);
+    const submittedTx = await provider.submitTx(tx);
+    console.log(`Claim transaction submitted: ${submittedTx}`);
     
-}
-
-if( process.argv[1].includes("claimVesting") )
-{
-    claimVesting(blockfrost());
+    return submittedTx;
 }

@@ -2,6 +2,7 @@ import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { Address, ITxBuildInput, IUTxO, PrivateKey } from "@harmoniclabs/plu-ts";
 import { readFile } from "fs/promises";
 import blockfrost from "./blockfrost";
+import { Emulator } from "./package/";
 import getTxBuilder from "./getTxBuilder";
 
 async function returnFaucet()

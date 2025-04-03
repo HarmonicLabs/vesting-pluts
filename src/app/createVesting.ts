@@ -1,12 +1,17 @@
-import { Address, Credential, Hash28, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType } from "@harmoniclabs/plu-ts";
+import { Address, Credential, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType, IProvider } from "@harmoniclabs/plu-ts";
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
+import { Emulator } from "./package";
 
-async function createVesting(Blockfrost: BlockfrostPluts)
-{   
+/**
+ * Creates a vesting contract transaction
+ * @param provider The provider to use (Blockfrost or Emulator)
+ * @returns The transaction hash
+ */
+export async function createVesting(provider: BlockfrostPluts | Emulator): Promise<string> {   
     const txBuilder = await getTxBuilder();
      
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
@@ -25,41 +30,39 @@ async function createVesting(Blockfrost: BlockfrostPluts)
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
 
-    const utxos = await Blockfrost.addressUtxos( address )
-        .catch( e => { throw new Error ("unable to find utxos at " + addr) })
-
-    // atleast has 10 ada
-    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000)!;
+    const utxos = await provider.addressUtxos(address)
+        .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
+    // At least has 15 ADA
+    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000);
     if (!utxo) {
-        throw new Error("No utxo with more than 10 ada");
+        throw new Error(`No UTxO with more than 15 ADA at address ${address}`);
     }
 
     const nowPosix = Date.now();
+    // Set deadline to 10 seconds in the future
+    const deadline = nowPosix + 10_000;
 
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
-        collaterals: [ utxo ],
+        collaterals: [utxo],
         outputs: [
             {
                 address: scriptAddr,
-                value: Value.lovelaces( 10_000_000 ),
+                value: Value.lovelaces(5_000_000),
                 datum: VestingDatum.VestingDatum({
-                    beneficiary: pBSToData.$( pByteString( pkh.toBuffer() ) ),
-                    deadline: pIntToData.$( nowPosix + 10_000 )
+                    beneficiary: pBSToData.$(pByteString(pkh.toBuffer())),
+                    deadline: pIntToData.$(deadline)
                 })
             }
         ],
         changeAddress: address
     });
     
-    await tx.signWith( new PrivateKey(privateKey) );
+    await tx.signWith(privateKey);
 
-    const submittedTx = await Blockfrost.submitTx( tx );
-    console.log(submittedTx);
+    const submittedTx = await provider.submitTx(tx);
+    console.log(`Vesting transaction submitted: ${submittedTx}`);
+    console.log(`Vesting deadline set to: ${new Date(deadline).toISOString()}`);
     
-}
-
-if( process.argv[1].includes("createVesting") )
-{
-    createVesting(blockfrost());
+    return submittedTx;
 }
