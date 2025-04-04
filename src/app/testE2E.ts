@@ -1,7 +1,6 @@
 import { Address, PrivateKey, Value, PublicKey, IProvider } from "@harmoniclabs/plu-ts";
 import { readFile } from "fs/promises";
 import { getProvider } from "./getProvider";
-import getTxBuilder from "./getTxBuilder";
 import { Emulator } from "./package/";
 import { initializeEmulator } from "./package/utils/helper";
 import { createVesting } from "./createVesting";
@@ -39,7 +38,6 @@ async function testVestingE2E(useEmulator: boolean = false) {
     provider = initializeEmulator(addressBalances);
   } else {
     provider = getProvider(false);
-    console.log("Using Blockfrost - ensure your addresses have been funded with a faucet");
   }
   
   // Step 1: Create the vesting contract
@@ -116,8 +114,7 @@ async function verifyFinalState(provider: BlockfrostPluts | Emulator , address1:
   console.log(`Address 1 balance: ${balance1} lovelaces`);
   console.log(`Address 2 balance: ${balance2} lovelaces`);
   
-  // Check if address2 received the vested funds
-  // In a real test, you'd verify the exact expected amounts
+  // TODO: Add actual verification logic
   console.log("Verification complete");
 }
 
