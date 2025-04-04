@@ -29,7 +29,7 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
-
+    console.log(`Public key hash: ${pkh.toString()}`);
     const utxos = await provider.addressUtxos(address)
         .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
     // At least has 15 ADA
@@ -38,9 +38,15 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
         throw new Error(`No UTxO with more than 15 ADA at address ${address}`);
     }
 
-    const nowPosix = Date.now();
-    // Set deadline to 10 seconds in the future
-    const deadline = nowPosix + 10_000;
+    let deadline: number;
+    // Should this be more consistent
+    // When I get the Tx validation from Michele, I'll make this better
+    if (provider instanceof Emulator) {
+        deadline = provider.getChainTip().slot + 10;
+    } else {
+        const nowPosix = Date.now();
+        deadline = (nowPosix + 10_000 )
+    }
 
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],

@@ -28,6 +28,7 @@ async function testVestingE2E(useEmulator: boolean = false) {
   const address2 = Address.fromString(addr2);
   
   // If using emulator, create initial UTxOs
+  // This is ugly, need to improve this
   if (useEmulator) {
     // Initialize emulator with UTxOs directly - don't use getProvider
     const addressBalances = new Map<Address, bigint>();
@@ -52,10 +53,11 @@ async function testVestingE2E(useEmulator: boolean = false) {
     console.log("Advancing emulator by 3 blocks for confirmation");
     await (provider as Emulator).awaitBlock(3);
   } else {
-    console.log("Waiting 60 seconds for Blockfrost confirmation");
-    await sleep(60000); // 60 seconds
+    console.log("Waiting 120 seconds for Blockfrost confirmation");
+    // Need to reduce this a bit and check if the transaction is confirmed
+    // if not, wait again for 15 seconds and repeat 10 times before failing
+    await sleep(120_000); // 120 seconds
   }
-  
   // Step 3: Wait for deadline to pass
   console.log("\n=== Step 3: Waiting for deadline to pass ===");
   const deadlineWaitTime = 10000; // Match the deadline in createVesting
@@ -70,7 +72,9 @@ async function testVestingE2E(useEmulator: boolean = false) {
     console.log(`Waiting ${Math.ceil(deadlineWaitTime / 1000) + 5} seconds to pass deadline`);
     await sleep(deadlineWaitTime + 5000);
   }
-  
+  // Verify that the transaction can be seen on chain
+//   const txId = await provider.getTx(vestingTxHash);
+
   // Step 4: Claim the vested funds
   console.log("\n=== Step 4: Claiming vested funds ===");
   const claimTxHash = await claimVesting(provider);
@@ -95,41 +99,6 @@ async function testVestingE2E(useEmulator: boolean = false) {
   await verifyFinalState(provider, address1, address2);
   
   console.log("\n=== Test Completed Successfully ===");
-}
-
-/**
- * Setup initial UTxOs in the emulator
- */
-async function setupEmulatorUtxos(emulator: Emulator, address1: Address, address2: Address) {
-  console.log("Setting up initial UTxOs in the emulator");
-  
-  // Load private keys for signing
-  const privateKeyFile1 = await readFile("./testnet/payment1.skey", { encoding: "utf-8" });
-  const privateKey1 = PrivateKey.fromCbor(JSON.parse(privateKeyFile1).cborHex);
-  
-  const privateKeyFile2 = await readFile("./testnet/payment2.skey", { encoding: "utf-8" });
-  const privateKey2 = PrivateKey.fromCbor(JSON.parse(privateKeyFile2).cborHex);
-  
-  // Get transaction builder
-  const txBuilder = await getTxBuilder(emulator);
-  
-  // Initialize emulator with addresses and initial balances
-  const addressBalances = new Map<Address, bigint>();
-  addressBalances.set(address1, 100_000_000n); // 100 ADA
-  addressBalances.set(address2, 100_000_000n); // 100 ADA
-  
-  // Create a new emulator instance with these initial UTxOs
-  emulator = initializeEmulator(addressBalances);
-  
-  console.log("Emulator initialized with test UTxOs");
-  console.log(emulator.prettyPrintLedgerState());
-  
-  // Process the transaction
-  await emulator.awaitBlock(1);
-  
-  console.log("Initial UTxOs created with 100 ADA each");
-  console.log("Emulator state after setup:");
-  console.log(emulator.prettyPrintLedgerState());
 }
 
 /**
@@ -174,15 +143,3 @@ if (require.main === module) {
 }
 
 export { testVestingE2E };
-
-console.log('🚀 Running vesting E2E test with emulator...');
-  
-testVestingE2E(true)
-  .then(() => {
-    console.log('✅ Test completed successfully');
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error('❌ Test failed:', error);
-    process.exit(1);
-  });
