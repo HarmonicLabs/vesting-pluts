@@ -1,5 +1,5 @@
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import { Emulator } from "./package";
+import { Emulator } from "../package";
 
 /**
  * Creates a Blockfrost provider instance
@@ -16,8 +16,9 @@ function createBlockfrostProvider(): BlockfrostPluts {
  * Creates an Emulator provider instance
  * @param initialSettings Optional settings for the emulator
  * @returns Emulator provider
+ * TODO: use initializeEmulator from Emulator in the return statement
  */
-function createEmulatorProvider(
+export function createEmulatorProvider(
     initialSettings?: {
         initialUtxos?: any[],
         debugLevel?: number
@@ -27,7 +28,7 @@ function createEmulatorProvider(
         initialSettings?.initialUtxos || [], 
         undefined, // Use default genesis infos
         undefined, // Use default protocol parameters
-        initialSettings?.debugLevel ?? 1 // Default debug level is 1
+        initialSettings?.debugLevel ?? 0 // Default debug level is 0
     );
 }
 

@@ -14,8 +14,10 @@
     "vesting:create": "npm run build:light && node dist/app/createVesting.js",
     "vesting:claim": "npm run build:light && node dist/app/claimVesting.js",
     "vesting:emulator": "npm run build:light && node dist/app/emulator_integration/vesting_emulator.js",
-    "test:emulator": "npm run build:light && node dist/app/testE2E.js --emulator",
-    "test:blockfrost": "npm run build:light && node dist/app/testE2E.js" 
+    "test:emulator": "npm run build:light && node dist/test/testE2E.js --emulator",
+    "test:blockfrost": "npm run build:light && node dist/test/testE2E.js",
+    "test:emulator:returnFaucet": "npm run build:light && node dist/test/testE2E.js --emulator --returnFaucet",
+    "test:blockfrost:returnFaucet": "npm run build:light && node dist/test/testE2E.js --returnFaucet"
   },
   "dependencies": {
     "@harmoniclabs/blockfrost-pluts": "^0.1.15",

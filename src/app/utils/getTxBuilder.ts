@@ -1,6 +1,6 @@
 import { TxBuilder, defaultMainnetGenesisInfos } from "@harmoniclabs/buildooor";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import { Emulator } from "./package";
+import { Emulator } from "../package";
 import { defaultProtocolParameters } from "@harmoniclabs/plu-ts";
 
 // Cache for the TxBuilder to avoid redundant API calls

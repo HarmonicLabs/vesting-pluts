@@ -1,9 +1,9 @@
 import { Address, Credential, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType, IProvider } from "@harmoniclabs/plu-ts";
-import VestingDatum from "../VestingDatum";
-import getTxBuilder from "./getTxBuilder";
+import VestingDatum from "../../VestingDatum";
+import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
-import { Emulator } from "./package";
+import { Emulator } from "../package";
 
 /**
  * Creates a vesting contract transaction

@@ -1,11 +1,13 @@
 import { Address, PrivateKey, Value, PublicKey, IProvider } from "@harmoniclabs/plu-ts";
 import { readFile } from "fs/promises";
-import { getProvider } from "./getProvider";
-import { Emulator } from "./package/";
-import { initializeEmulator } from "./package/utils/helper";
-import { createVesting } from "./createVesting";
-import { claimVesting } from "./claimVesting";
+import { getProvider } from "../app/utils/getProvider";
+import { Emulator } from "../app/package";
+import { initializeEmulator } from "../app/package/utils/helper";
+import { createVesting } from "../app/offchain/createVesting";
+import { claimVesting } from "../app/offchain/claimVesting";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
+import { returnFaucet } from "../app/offchain/returnFaucet";
+
 
 // Modify the imports to export the functions instead of running them directly
 // in createVesting.ts and claimVesting.ts
@@ -14,7 +16,7 @@ import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
  * Run an end-to-end test of the vesting contract
  * Works with both Blockfrost and Emulator
  */
-async function testVestingE2E(useEmulator: boolean = false) {
+async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean = false) {
   console.log(`Running vesting E2E test using ${useEmulator ? 'Emulator' : 'Blockfrost'}`);
   
   // Get the provider
@@ -91,12 +93,33 @@ async function testVestingE2E(useEmulator: boolean = false) {
     console.log("Waiting 60 seconds for Blockfrost confirmation");
     await sleep(60000); // 60 seconds
   }
-  
+
   // Verify final balances
   console.log("\n=== Final Verification ===");
   await verifyFinalState(provider, address1, address2);
   
   console.log("\n=== Test Completed Successfully ===");
+
+  // Extra step: Return funds to the faucet
+  if (returnFunds) {
+    console.log("\n=== Step 6: Returning funds to faucet ===");
+    try {      
+      // Call the function with the test directory and same emulator setting
+      const returnTxHash = await returnFaucet(provider, "./testnet", useEmulator);
+      console.log(`Funds returned to faucet with transaction: ${returnTxHash}`);
+      
+      // Wait for confirmation
+      if (useEmulator) {
+        await (provider as Emulator).awaitBlock(1);
+      } else {
+        console.log("Waiting 60 seconds for return transaction confirmation");
+        await sleep(60000);
+      }
+    } catch (error) {
+      console.error("Failed to return funds to faucet:", error);
+      // Continue with test completion even if fund return fails
+    }
+  }
 }
 
 /**
@@ -128,7 +151,8 @@ function sleep(ms: number): Promise<void> {
 // If running directly, parse command line arguments
 if (require.main === module) {
   const useEmulator = process.argv.includes('--emulator');
-  testVestingE2E(useEmulator)
+  const returnFunds = process.argv.includes('--return-funds');
+  testVestingE2E(useEmulator, returnFunds)
     .then(() => {
       console.log("Test completed successfully");
       process.exit(0);
