@@ -2,7 +2,6 @@ import { Address, Credential, PrivateKey, Value, pBSToData, pByteString, pIntToD
 import VestingDatum from "../VestingDatum";
 import getTxBuilder from "./getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import blockfrost from "./blockfrost";
 import { readFile } from "fs/promises";
 import { Emulator } from "./package";
 
@@ -12,7 +11,7 @@ import { Emulator } from "./package";
  * @returns The transaction hash
  */
 export async function createVesting(provider: BlockfrostPluts | Emulator): Promise<string> {   
-    const txBuilder = await getTxBuilder();
+    const txBuilder = await getTxBuilder(provider);
      
     const scriptFile = await readFile("./testnet/vesting.plutus.json", { encoding: "utf-8" });
     const script = Script.fromCbor(JSON.parse(scriptFile).cborHex, ScriptType.PlutusV3)
@@ -29,7 +28,6 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     
     const publicKeyFile = await readFile("./testnet/payment2.vkey", { encoding: "utf-8" });
     const pkh = PublicKey.fromCbor( JSON.parse(publicKeyFile).cborHex ).hash;
-    console.log(`Public key hash: ${pkh.toString()}`);
     const utxos = await provider.addressUtxos(address)
         .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
     // At least has 15 ADA
@@ -47,7 +45,6 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
         const nowPosix = Date.now();
         deadline = (nowPosix + 10_000 )
     }
-
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [utxo],
