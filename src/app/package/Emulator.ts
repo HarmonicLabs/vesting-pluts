@@ -554,7 +554,6 @@ export class Emulator implements ITxRunnerProvider, IGetGenesisInfos, IGetProtoc
         const utxos = this.resolveUtxosbyAddress(address);
         // Log all addresses in the map for comparison
         this.debug(1, `Looking for address: ${address}`);
-        console.log(this.prettyPrintLedgerState());
             
         // Return empty array instead of undefined to match Blockfrost behavior
         return Promise.resolve(utxos || []);
