@@ -13,6 +13,9 @@ let cachedTxBuilder: TxBuilder | undefined = undefined;
  * @returns A configured TxBuilder instance
  */
 export default async function getTxBuilder(provider?: BlockfrostPluts | Emulator): Promise<TxBuilder> {
+  if (!provider) {
+    console.warn("No provider passed to getTxBuilder. Using defaults which may not be suitable for mainnet/testnet transactions.");
+  }
   // Return cached TxBuilder if available and no provider is specified
   if (cachedTxBuilder && !provider) {
     return cachedTxBuilder;
