@@ -74,3 +74,24 @@ run using
 ```bash
 npm run vesting:returnFaucet
 ```
+
+## Integrate pluts-emulator into Vesting example
+The vesting example has been upgraded to support either of Blockfrost or Emulator providers.
+
+### Run
+1. `npm run build`
+2. `npm run start`
+3. `npm run vesting:genKeys`
+4. `npm run test:emulator`
+   
+   * `testVestingE2E()` Initializes emulator populating UTXOs for generated addresses
+   * Invokes _create_ of _vesting contract_
+   * `createVesting()`
+   * invokes `awaitBlock` to for as long as required, ensure create transaction is confirmed
+   * invokes `awaitBlock(blocksToWait)` until deadline in the create contract is reached
+   * `claimVesting()`
+   * invokes `awaitBlock` to for as long as required, ensure claim transaction is confirmed
+
+To return the test faucets into the _preprod_ faucet address, invoke `npm run test:emulator:returnFaucet`
+
+To run the same E2E test scenario above with Blockfrost, run `npm run test:blockfrost`
