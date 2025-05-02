@@ -63,7 +63,6 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
   // Step 3: Wait for deadline to pass
   console.log("\n=== Step 3: Waiting for deadline to pass ===");
   const deadlineWaitTime = 10; // Match the deadline in createVesting
-  // const deadlineWaitTime = 1; // too early
   if (useEmulator) {
     // Calculate how many blocks to wait
     // Using 1 block per second as estimation, plus some margin
