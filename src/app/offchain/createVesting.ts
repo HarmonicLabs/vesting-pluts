@@ -39,7 +39,7 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     let deadline: number;
     // ToDo: Make it more consistent per the Tx Validation in place
     if (provider instanceof Emulator) {
-        deadline = provider.getChainTip().time + 10;
+        deadline = Date.UTC(2025, 0, 1);
     } else {
         const nowPosix = Date.now();
         deadline = (nowPosix + 10_000 )
