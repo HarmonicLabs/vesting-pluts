@@ -2,7 +2,7 @@ import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataCon
 import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
-import { Emulator } from "../package";
+import { Emulator } from "@harmoniclabs/pluts-emulator";
 
 /**
  * Claims funds from a vesting contract

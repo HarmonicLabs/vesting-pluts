@@ -1,7 +1,7 @@
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { Address, ITxBuildInput, IUTxO, PrivateKey } from "@harmoniclabs/plu-ts";
 import { readFile, readdir} from "fs/promises";
-import { Emulator } from "../package";
+import { Emulator } from "@harmoniclabs/pluts-emulator";
 // import { blockfrost } from "../utils/getProvider";
 import getTxBuilder from "../utils/getTxBuilder";
 
