@@ -3,7 +3,7 @@ import VestingDatum from "../../VestingDatum";
 import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
-import { Emulator } from "../package";
+import { Emulator } from "@harmoniclabs/pluts-emulator";
 
 /**
  * Creates a vesting contract transaction
@@ -37,14 +37,14 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     }
 
     let deadline: number;
-    // Should this be more consistent
-    // When I get the Tx validation from Michele, I'll make this better
+    // ToDo: Make it more consistent per the Tx Validation in place
     if (provider instanceof Emulator) {
-        deadline = provider.getChainTip().slot + 10;
+        deadline = provider.getChainTip().time + 10;
     } else {
         const nowPosix = Date.now();
         deadline = (nowPosix + 10_000 )
     }
+    
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [utxo],

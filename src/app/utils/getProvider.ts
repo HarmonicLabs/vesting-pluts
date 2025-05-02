@@ -1,5 +1,5 @@
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
-import { Emulator } from "../package";
+import { Emulator } from "@harmoniclabs/pluts-emulator";
 
 /**
  * Creates a Blockfrost provider instance
