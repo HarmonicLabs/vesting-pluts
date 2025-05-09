@@ -36,15 +36,9 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
         throw new Error(`No UTxO with more than 15 ADA at address ${address}`);
     }
 
-    let deadline: number;
-    // ToDo: Make it more consistent per the Tx Validation in place
-    if (provider instanceof Emulator) {
-        deadline = provider.getChainTip().time + 10;
-    } else {
-        const nowPosix = Date.now();
-        deadline = (nowPosix + 10_000 )
-    }
-    
+    const chainTip = await provider.getChainTip();
+    const deadline = txBuilder.slotToPOSIX(chainTip.slot! + 900_000); //convert to units POSIX
+
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [utxo],
@@ -65,7 +59,7 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
 
     const submittedTx = await provider.submitTx(tx);
     console.log(`Vesting transaction submitted: ${submittedTx}`);
-    console.log(`Vesting deadline set to: ${new Date(deadline).toISOString()}`);
+    console.log(`Vesting deadline set to: ${deadline} - ${new Date(deadline).toISOString()}`);
     
     return submittedTx;
 }

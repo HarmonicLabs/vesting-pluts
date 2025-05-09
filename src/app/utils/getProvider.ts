@@ -1,13 +1,22 @@
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { Emulator } from "@harmoniclabs/pluts-emulator";
+import * as dotenv from 'dotenv';
 
+// Load environment variables from .env file
+dotenv.config();
 /**
  * Creates a Blockfrost provider instance
  * @returns BlockfrostPluts provider
  */
 function createBlockfrostProvider(): BlockfrostPluts {
+    // Read projectId from environment variables
+    const projectId = process.env.BLOCKFROST_PROJECT_ID;
+
+    if (!projectId) {
+        throw new Error("PROJECT_ID is not defined in environment variables");
+    }
     const provider = new BlockfrostPluts({
-        projectId: "preprodKRzuHe6HynTdTaMYXBJUq3DUwsTATXjx"
+        projectId: projectId
     });
     return provider;
 }

@@ -1,4 +1,4 @@
-import { Address, bool, compile, data, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType, plet, passert, perror, PMaybe, unit, punsafeConvertType } from "@harmoniclabs/plu-ts";
+import { Address, compile, data, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType, plet, passert, perror, PMaybe, unit, punsafeConvertType, ptraceIfTrue, pshowInt, int, ptraceVal } from "@harmoniclabs/plu-ts";
 import VestingDatum from "./VestingDatum";
 
 export const contract = pfn([
@@ -19,8 +19,8 @@ export const contract = pfn([
     // inlined
     const deadlineReached = plet(
         pmatch( tx.interval.from.bound )
-        .onPFinite(({ n: lowerInterval }) =>
-            datum.deadline.ltEq( lowerInterval ) 
+        .onPFinite(({ n: lowerInterval }) =>  
+            datum.deadline.ltEq(  ptraceVal( int ).$( lowerInterval ) ) 
         )
         ._( _ => pBool( false ) )
     )
@@ -28,6 +28,7 @@ export const contract = pfn([
     return passert.$(
         (ptraceIfFalse.$(pdelay(pStr("Error in signedByBeneficiary"))).$(signedByBeneficiary))
         .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
+        .and (  ptraceIfTrue.$(pdelay( pshowInt.$( datum.deadline ).utf8Decoded )).$( deadlineReached )) 
       );
 
 });

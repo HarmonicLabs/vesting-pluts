@@ -40,10 +40,11 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
   } else {
     provider = getProvider(false);
   }
-  // Print initial emulator state
-  console.log("\n=== Initial Emulator State ===");
-  console.log((provider as Emulator).prettyPrintLedgerState());
-
+  if (useEmulator) {
+    // Print initial emulator state
+    console.log("\n=== Initial Emulator State ===");
+    console.log((provider as Emulator).prettyPrintLedgerState());
+  }
   // Step 1: Create the vesting contract
   console.log("\n=== Step 1: Creating vesting contract ===");
   const vestingTxHash = await createVesting(provider);
@@ -74,6 +75,7 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
     console.log(`Waiting ${Math.ceil(deadlineWaitTime / 1000) + 5} seconds to pass deadline`);
     await sleep(deadlineWaitTime + 5000);
   }
+
   // Verify that the transaction can be seen on chain
 //   const txId = await provider.getTx(vestingTxHash);
 
