@@ -1,8 +1,7 @@
 import { Address, PrivateKey, Value, PublicKey, IProvider } from "@harmoniclabs/plu-ts";
 import { readFile } from "fs/promises";
 import { getProvider } from "../app/utils/getProvider";
-import { Emulator } from "../app/package";
-import { initializeEmulator } from "../app/package/utils/helper";
+import { Emulator, initializeEmulator } from "@harmoniclabs/pluts-emulator";
 import { createVesting } from "../app/offchain/createVesting";
 import { claimVesting } from "../app/offchain/claimVesting";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
@@ -41,7 +40,11 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
   } else {
     provider = getProvider(false);
   }
-  
+  if (useEmulator) {
+    // Print initial emulator state
+    console.log("\n=== Initial Emulator State ===");
+    console.log((provider as Emulator).prettyPrintLedgerState());
+  }
   // Step 1: Create the vesting contract
   console.log("\n=== Step 1: Creating vesting contract ===");
   const vestingTxHash = await createVesting(provider);
@@ -60,7 +63,7 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
   }
   // Step 3: Wait for deadline to pass
   console.log("\n=== Step 3: Waiting for deadline to pass ===");
-  const deadlineWaitTime = 10000; // Match the deadline in createVesting
+  const deadlineWaitTime = 10; // Match the deadline in createVesting
   if (useEmulator) {
     // Calculate how many blocks to wait
     // Using 1 block per second as estimation, plus some margin
@@ -72,13 +75,20 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
     console.log(`Waiting ${Math.ceil(deadlineWaitTime / 1000) + 5} seconds to pass deadline`);
     await sleep(deadlineWaitTime + 5000);
   }
+
   // Verify that the transaction can be seen on chain
 //   const txId = await provider.getTx(vestingTxHash);
 
   // Step 4: Claim the vested funds
   console.log("\n=== Step 4: Claiming vested funds ===");
-  const claimTxHash = await claimVesting(provider);
-  console.log(`Vested funds claimed with transaction: ${claimTxHash}`);
+  try {
+    const claimTxHash = await claimVesting(provider);
+    console.log(`Vested funds claimed with transaction: ${claimTxHash}`);
+  } catch (error: any) {
+    console.error("Error claiming vested funds: ", error);
+    throw new Error("Claiming vested funds failed");
+    // don't continue with test completion
+  }
   
   // Step 5: Wait for final confirmation
   console.log("\n=== Step 5: Waiting for final confirmation ===");

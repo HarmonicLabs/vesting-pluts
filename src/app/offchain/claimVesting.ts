@@ -1,8 +1,8 @@
-import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType, IProvider } from "@harmoniclabs/plu-ts";
+import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType, IProvider, Machine, UPLCProgram, parseUPLC } from "@harmoniclabs/plu-ts";
 import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
-import { Emulator } from "../package";
+import { Emulator } from "@harmoniclabs/pluts-emulator";
 
 /**
  * Claims funds from a vesting contract
@@ -68,7 +68,8 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
     // Get chain tip to set correct validity timeframe
     const chainTip = await provider.getChainTip();
     const invalidBefore = chainTip.slot!;
-
+    console.log("Claim Invalid Before : " + invalidBefore)
+    
     let tx = await txBuilder.buildSync({
         inputs: [
             { utxo: utxo },
