@@ -37,7 +37,7 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     }
 
     const chainTip = await provider.getChainTip();
-    const deadline = txBuilder.slotToPOSIX(chainTip.slot! + 900_000); //convert to units POSIX
+    const deadline = txBuilder.slotToPOSIX(chainTip.slot! + 9); //convert to units POSIX time
 
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
