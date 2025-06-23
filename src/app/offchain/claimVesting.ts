@@ -36,10 +36,25 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
         .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
 
     // At least has 15 ADA
-    const utxo = utxos.find(utxo => utxo.resolved.value.lovelaces >= 15_000_000);
+    let utxo; 
+    utxos.forEach(item => { 
+        if (item.resolved.value.lovelaces >= 15_000_000) {
+            utxo = item;
+        }
+    });
     if (!utxo) {
         throw new Error("No UTxO with more than 15 ADA");
     }
+
+    let collateralUtxo;
+    utxos.forEach(item => {
+        if (item.resolved.value.lovelaces <= 5_000_000) {
+            collateralUtxo = item;
+        }
+    });
+    if (!collateralUtxo) {
+            throw new Error("No collateral UTxO with less than 5 ADA");
+        }
 
     const scriptUtxos = await provider.addressUtxos(scriptAddr)
         .catch(e => { throw new Error(`Unable to find UTxOs at script address: ${e.message}`) });
@@ -72,18 +87,18 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
     
     let tx = await txBuilder.buildSync({
         inputs: [
-            { utxo: utxo },
+            { utxo: utxo }, // Regular input
             {
-                utxo: scriptUtxo,
+                utxo: scriptUtxo, // Script input
                 inputScript: {
-                    script: script,
-                    datum: "inline",
-                    redeemer: new DataI(0)
+                    script: script, // Plutus script
+                    datum: "inline", // Datum associated with the script UTxO
+                    redeemer: new DataI(0) // Redeemer to unlock the script UTxO
                 }
             }
         ],
         requiredSigners: [pkh],
-        collaterals: [utxo],
+        collaterals: collateralUtxo,
         changeAddress: address,
         invalidBefore: invalidBefore
     });
