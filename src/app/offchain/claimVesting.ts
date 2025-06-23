@@ -98,7 +98,7 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
             }
         ],
         requiredSigners: [pkh],
-        collaterals: collateralUtxo ? [collateralUtxo] : [],
+        collaterals: collateralUtxo,
         changeAddress: address,
         invalidBefore: invalidBefore
     });
