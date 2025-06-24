@@ -35,6 +35,7 @@ async function testVestingE2E(useEmulator: boolean = false, returnFunds: boolean
     addressBalances.set(address1, 15_000_000n);
     addressBalances.set(address2, 15_000_000n);
 
+    // Use the following lines to use a specific collateral UTxO
     const addr2Dup = Address.fromString(address2.toString())
     // Add a utxo with atleast 5 ADA (but >minCollateral) for collateral
     addressBalances.set(addr2Dup, 5_000_000n);
