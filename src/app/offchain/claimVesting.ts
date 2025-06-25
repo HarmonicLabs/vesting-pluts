@@ -46,15 +46,19 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
         throw new Error("No UTxO with more than 15 ADA");
     }
 
+    // Use the following lines if you want to use a specific collateral UTxO
+    // Find a smaller UTxO for collateral
     let collateralUtxo;
     utxos.forEach(item => {
-        if (item.resolved.value.lovelaces <= 5_000_000) {
+        const lovelaces = item.resolved.value.lovelaces
+        if (lovelaces >= 1_00_000 && lovelaces <= 5_000_000) {
             collateralUtxo = item;
         }
     });
     if (!collateralUtxo) {
-            throw new Error("No collateral UTxO with less than 5 ADA");
-        }
+        throw new Error("No small UTxO found for collateral. Use a UTxO with at least 0.1 ADA but less than 5 ADA");
+    }
+
 
     const scriptUtxos = await provider.addressUtxos(scriptAddr)
         .catch(e => { throw new Error(`Unable to find UTxOs at script address: ${e.message}`) });
@@ -98,7 +102,7 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
             }
         ],
         requiredSigners: [pkh],
-        collaterals: collateralUtxo,
+        collaterals: [collateralUtxo],
         changeAddress: address,
         invalidBefore: invalidBefore
     });
