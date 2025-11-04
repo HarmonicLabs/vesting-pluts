@@ -1,60 +1,97 @@
-import { Address, compile, data, Credential, pBool, pdelay, pfn, pmatch, PScriptContext, pStr, ptraceIfFalse, Script, ScriptType, plet, passert, perror, PMaybe, unit, punsafeConvertType, ptraceIfTrue, pshowInt, int, ptraceVal } from "@harmoniclabs/plu-ts";
-import VestingDatum from "./VestingDatum";
+import { Compiler, createMemoryCompilerIoApi } from '@harmoniclabs/pebble';
+import { Script, ScriptType, Address, Credential } from "@harmoniclabs/buildooor";
+import { fromUtf8 } from "@harmoniclabs/uint8array-utils";
 
-export const contract = pfn([
-    PScriptContext.type
-],  unit)
-(( {redeemer, tx, purpose} ) => {
+const CONTRACT_NAME = 'vesting.pebble';
 
-  const maybeDatum = plet(
-    pmatch(purpose)
-    .onSpending(({ datum }) => datum)
-    ._(_ => perror(PMaybe(data).type))
-  );
+const CONTRACT = `
+struct VestingDatum {
+    beneficiary: PubKeyHash,
+    deadline: int
+}
 
-     const datum = plet( punsafeConvertType( maybeDatum.unwrap, VestingDatum.type ) )
+contract Vesting
+{
+    spend unlock(inputIdx: int)
+  {
+    const { tx, spendingRef } = context;
+    const { resolved: spendingInput, ref: inputSpendingRef } = tx.inputs[inputIdx];
 
-     const signedByBeneficiary = tx.signatories.some( datum.beneficiary.eq )
+    assert inputSpendingRef === spendingRef;
 
-    // inlined
-    const deadlineReached = plet(
-        pmatch( tx.interval.from.bound )
-        .onPFinite(({ n: lowerInterval }) =>  
-            datum.deadline.ltEq(  ptraceVal( int ).$( lowerInterval ) ) 
-        )
-        ._( _ => pBool( false ) )
-    )
+    const InlineDatum{
+      datum: {
+        beneficiary,
+        deadline
+      } as VestingDatum
+    } = spendingInput.datum;
+    
+    assert tx.requiredSigners.includes(beneficiary);
 
-    return passert.$(
-        (ptraceIfFalse.$(pdelay(pStr("Error in signedByBeneficiary"))).$(signedByBeneficiary))
-        .and( ptraceIfFalse.$(pdelay(pStr("deadline not reached or not specified"))).$( deadlineReached ) )
-        .and ( ptraceIfFalse.$(pdelay( pshowInt.$( datum.deadline ).utf8Decoded )).$( deadlineReached )) 
-      );
+    const Finite{ n } = tx.validityInterval.from.boundary;
+    
+    assert n >= deadline;
+  }
+}
+`;
 
-});
+async function compileContract(): Promise<Uint8Array> {
+  const ioApi = createMemoryCompilerIoApi({
+    sources: new Map([
+      [CONTRACT_NAME, fromUtf8(CONTRACT)],
+    ]),
+    useConsoleAsOutput: true,
+  });
 
-///////////////////////////////////////////////////////////////////
-// ------------------------------------------------------------- //
-// ------------------------- utilities ------------------------- //
-// ------------------------------------------------------------- //
-///////////////////////////////////////////////////////////////////
+  const compiler = new Compiler(ioApi);
 
+  await compiler.compile({ entry: CONTRACT_NAME, root: "/" });
 
-export const compiledContract = compile( contract );
+  const compiled = ioApi.outputs.get("out/out.flat");
 
-export const script = new Script(
-    ScriptType.PlutusV3,
-    compiledContract
-);
+  return compiled || new Uint8Array();
+}
+
+const bytes = await compileContract();
+
+export const script = new Script(ScriptType.PlutusV3, bytes);
 
 export const scriptMainnetAddr = new Address(
-    "mainnet",
-    Credential.script( script.hash )
+  "mainnet",
+  Credential.script( script.hash )
 );
 
 export const scriptTestnetAddr = new Address(
-    "testnet",
-    Credential.script( script.hash )
+  "testnet",
+  Credential.script( script.hash )
 );
 
-export default contract;
+// function getScript(bytes: Uint8Array): Script {
+//   return new Script(ScriptType.PlutusV3, bytes);
+// }
+
+// function getScriptMainnetAddr(script: Script): Address {
+//   return new Address(
+//       "mainnet",
+//       Credential.script( script.hash )
+//   );
+// }
+
+// function getScriptTestnetAddr(script: Script): Address {
+//   return new Address(
+//       "testnet",
+//       Credential.script( script.hash )
+//   );
+// }
+
+export interface CompiledContract {
+  script: Script;
+  testnetAddress: Address;
+}
+
+// export async function loadContract(): Promise<CompiledContract> {
+//   const bytes = await compileContract();
+//   const script = getScript(bytes);
+//   const testnetAddress = getScriptTestnetAddr(script);
+//   return { script, testnetAddress };
+// }

@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import { Address, Credential, PublicKey, PrivateKey, PubKeyHash } from "@harmoniclabs/plu-ts";
+import { Address, Credential, PublicKey, PrivateKey, PubKeyHash } from "@harmoniclabs/buildooor";
 import { config } from "dotenv";
 import { mkdir, writeFile } from "fs/promises";
 import { blake2b } from 'blakejs';

@@ -1,4 +1,4 @@
-import { Address, PrivateKey, Value, PublicKey, IProvider } from "@harmoniclabs/plu-ts";
+import { Address, PrivateKey, Value, PublicKey, IProvider } from "@harmoniclabs/buildooor";
 import { readFile } from "fs/promises";
 import { getProvider } from "../app/utils/getProvider";
 import { Emulator, initializeEmulator } from "@harmoniclabs/pluts-emulator";
