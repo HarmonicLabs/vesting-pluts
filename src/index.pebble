@@ -1,0 +1,28 @@
+struct VestingDatum {
+    beneficiary: PubKeyHash,
+    deadline: int
+}
+
+contract Vesting
+{
+    spend unlock(inputIdx: int)
+  {
+    const { tx, spendingRef } = context;
+    const { resolved: spendingInput, ref: inputSpendingRef } = tx.inputs[inputIdx];
+
+    assert inputSpendingRef === spendingRef;
+
+    const InlineDatum{
+      datum: {
+        beneficiary,
+        deadline
+      } as VestingDatum
+    } = spendingInput.datum;
+    
+    assert tx.requiredSigners.includes(beneficiary);
+
+    const Finite{ n } = tx.validityInterval.from.boundary;
+    
+    assert n >= deadline;
+  }
+}

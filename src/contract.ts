@@ -1,39 +1,11 @@
+import fs from 'fs';
 import { Compiler, createMemoryCompilerIoApi } from '@harmoniclabs/pebble';
 import { Script, ScriptType, Address, Credential } from "@harmoniclabs/buildooor";
 import { fromUtf8 } from "@harmoniclabs/uint8array-utils";
 
-const CONTRACT_NAME = 'vesting.pebble';
+const CONTRACT_NAME = 'index.pebble';
 
-const CONTRACT = `
-struct VestingDatum {
-    beneficiary: PubKeyHash,
-    deadline: int
-}
-
-contract Vesting
-{
-    spend unlock(inputIdx: int)
-  {
-    const { tx, spendingRef } = context;
-    const { resolved: spendingInput, ref: inputSpendingRef } = tx.inputs[inputIdx];
-
-    assert inputSpendingRef === spendingRef;
-
-    const InlineDatum{
-      datum: {
-        beneficiary,
-        deadline
-      } as VestingDatum
-    } = spendingInput.datum;
-    
-    assert tx.requiredSigners.includes(beneficiary);
-
-    const Finite{ n } = tx.validityInterval.from.boundary;
-    
-    assert n >= deadline;
-  }
-}
-`;
+const CONTRACT = fs.readFileSync(CONTRACT_NAME, 'utf8');
 
 async function compileContract(): Promise<Uint8Array> {
   const ioApi = createMemoryCompilerIoApi({
@@ -45,9 +17,9 @@ async function compileContract(): Promise<Uint8Array> {
 
   const compiler = new Compiler(ioApi);
 
-  await compiler.compile({ entry: CONTRACT_NAME, root: "/" });
+  await compiler.compile({ entry: CONTRACT_NAME, root: "/", outDir: 'dist' });
 
-  const compiled = ioApi.outputs.get("out/out.flat");
+  const compiled = ioApi.outputs.get("dist/out.flat");
 
   return compiled || new Uint8Array();
 }
