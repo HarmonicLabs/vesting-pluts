@@ -166,7 +166,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 // If running directly, parse command line arguments
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const useEmulator = process.argv.includes('--emulator');
   const returnFunds = process.argv.includes('--return-funds');
   testVestingE2E(useEmulator, returnFunds)
