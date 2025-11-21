@@ -96,8 +96,13 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
                 utxo: scriptUtxo, // Script input
                 inputScript: {
                     script: script, // Plutus script
-                    datum: "inline", // Datum associated with the script UTxO
-                    redeemer: new DataI(0) // Redeemer to unlock the script UTxO
+                    datum: new DataConstr(0, [
+                        new DataB(pkh.toBuffer()), 
+                        new DataI(txBuilder.slotToPOSIX(chainTip.slot! + 9))
+                    ]), // Datum associated with the script UTxO
+                    redeemer: new DataConstr(0, [
+                        new DataI( 0 )
+                    ]) // Redeemer to unlock the script UTxO
                 }
             }
         ],
