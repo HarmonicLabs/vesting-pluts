@@ -1,5 +1,4 @@
-import { Address, Credential, PrivateKey, Value, pBSToData, pByteString, pIntToData, CredentialType, PublicKey, Script, ScriptType, IProvider } from "@harmoniclabs/plu-ts";
-import VestingDatum from "../../VestingDatum";
+import { Address, Credential, PrivateKey, Value, CredentialType, PublicKey, Script, ScriptType, DataConstr, DataB, DataI } from "@harmoniclabs/buildooor";
 import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
@@ -39,6 +38,8 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
     const chainTip = await provider.getChainTip();
     const deadline = txBuilder.slotToPOSIX(chainTip.slot! + 9); //convert to units POSIX time
 
+
+    
     let tx = await txBuilder.buildSync({
         inputs: [{ utxo: utxo }],
         collaterals: [utxo],
@@ -46,10 +47,10 @@ export async function createVesting(provider: BlockfrostPluts | Emulator): Promi
             {
                 address: scriptAddr,
                 value: Value.lovelaces(5_000_000),
-                datum: VestingDatum.VestingDatum({
-                    beneficiary: pBSToData.$(pByteString(pkh.toBuffer())),
-                    deadline: pIntToData.$(deadline)
-                })
+                datum: new DataConstr(0, [
+                    new DataB(pkh.toBuffer()),
+                    new DataI(deadline)
+                ])
             }
         ],
         changeAddress: address
