@@ -1,4 +1,4 @@
-import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType } from "@harmoniclabs/buildooor";
+import { Address, DataI, Credential, PrivateKey, CredentialType, Script, DataConstr, DataB, PublicKey, defaultPreprodGenesisInfos, ScriptType, UTxO } from "@harmoniclabs/buildooor";
 import getTxBuilder from "../utils/getTxBuilder";
 import { BlockfrostPluts } from "@harmoniclabs/blockfrost-pluts";
 import { readFile } from "fs/promises";
@@ -32,7 +32,7 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
     const pkh = PublicKey.fromCbor(JSON.parse(publicKeyFile).cborHex).hash;
 
 
-    const utxos = await provider.addressUtxos(address)
+    let utxos = await provider.addressUtxos(address)
         .catch(e => { throw new Error(`Unable to find UTxOs at ${addr}: ${e.message}`) });
 
     // At least has 15 ADA
@@ -59,23 +59,31 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
         throw new Error("No small UTxO found for collateral. Use a UTxO with at least 0.1 ADA but less than 5 ADA");
     }
 
+    utxos = utxos.sort(UTxO.sort)
 
-    const scriptUtxos = await provider.addressUtxos(scriptAddr)
+    let scriptUtxos = await provider.addressUtxos(scriptAddr)
         .catch(e => { throw new Error(`Unable to find UTxOs at script address: ${e.message}`) });
-        
+    
+    scriptUtxos = scriptUtxos.sort(UTxO.sort)
+    
+    let inputIdx: number | undefined;
     // Find the script UTxO that matches our public key hash
-    const scriptUtxo = scriptUtxos.find(utxo => {
+    const scriptUtxo = scriptUtxos.find((utxo, idx) => {
         if (utxo.resolved.datum instanceof DataConstr) { 
             const pkhData = utxo.resolved.datum.fields[0]; 
             if (pkhData instanceof DataB) {
-                return pkh.toString() === Buffer.from(pkhData.bytes.toBuffer()).toString("hex");
+                inputIdx = idx;
+                return pkh.toString() === Buffer.from(pkhData.bytes.toBuffer()).toString("hex");                
             }
         }
         return false; 
     });
-    
+
     if (!scriptUtxo) {
-        throw new Error("No script UTxO found for the pkh");
+        throw new Error("No script UTxO found for the pkh ");
+    }
+    if (!inputIdx?.toString()) {
+        throw new Error("Input index not found");
     }
      
     txBuilder.setGenesisInfos(defaultPreprodGenesisInfos);
@@ -89,23 +97,25 @@ export async function claimVesting(provider: BlockfrostPluts | Emulator): Promis
     const invalidBefore = chainTip.slot!;
     console.log("Claim Invalid Before : " + invalidBefore)
     
-    let tx = await txBuilder.buildSync({
-        inputs: [
-            { utxo: utxo }, // Regular input
-            {
-                utxo: scriptUtxo, // Script input
-                inputScript: {
-                    script: script, // Plutus script
-                    datum: new DataConstr(0, [
-                        new DataB(pkh.toBuffer()), 
-                        new DataI(txBuilder.slotToPOSIX(chainTip.slot! + 9))
-                    ]), // Datum associated with the script UTxO
-                    redeemer: new DataConstr(0, [
-                        new DataI( 0 )
-                    ]) // Redeemer to unlock the script UTxO
-                }
+    const sortedInputs = [ utxo, scriptUtxo ].sort( UTxO.sort )
+    const inputArray = [
+        { utxo: utxo },
+        { utxo: scriptUtxo,
+            inputScript: {
+                script: script, // Plutus script
+                datum: new DataConstr(0, [
+                    new DataB(pkh.toBuffer()), 
+                    new DataI(txBuilder.slotToPOSIX(chainTip.slot! + 9))
+                ]), // Datum associated with the script UTxO
+                redeemer: new DataConstr(0, [
+                    new DataI( sortedInputs.indexOf( scriptUtxo )  )
+                ]) // Redeemer to unlock the script UTxO
             }
-        ],
+         }
+    ]
+
+    let tx = await txBuilder.buildSync({
+        inputs: inputArray,
         requiredSigners: [pkh],
         collaterals: [collateralUtxo],
         changeAddress: address,
